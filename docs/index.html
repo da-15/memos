@@ -638,6 +638,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
+  // 一覧のスクロール位置。入力中にiOSが裏のページをずらすので、戻ったときに元に戻す
+  let listScroll = 0;
+  const restoreScroll = () => window.scrollTo(0, listScroll);
   function setSaved(state) {
     saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
     saved.classList.toggle('ok', state === 'ok');
@@ -650,6 +653,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function openEditor(id, isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
+    listScroll = isNew ? 0 : window.scrollY;
     if (!saveFailed) hideToast();
     text.value = cur.text;
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
@@ -682,6 +686,10 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('editing');
     render();
+    // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
+    restoreScroll();
+    requestAnimationFrame(restoreScroll);
+    setTimeout(restoreScroll, 350);
   }
   text.addEventListener('input', () => {
     if (!cur) return;
