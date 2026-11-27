@@ -874,7 +874,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     requestAnimationFrame(restoreScroll);
     setTimeout(restoreScroll, 350);
     setTimeout(restoreScroll, 800);
-    if (reloadWanted) setTimeout(reloadIfModeChanged, 900); // 書いている間にライト／ダークが切り替わっていたら
   }
   text.addEventListener('input', () => {
     if (!cur) return;
@@ -985,10 +984,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     [sheetBackup, sheetRestore].forEach((x) => { x.hidden = x !== sh; });
     dim.hidden = false;
   }
-  function closeSheets() {
-    sheetBackup.hidden = true; sheetRestore.hidden = true; dim.hidden = true; pending = null; bkFile.value = '';
-    if (reloadWanted) setTimeout(reloadIfModeChanged, 300); // メニューを開いている間にライト／ダークが切り替わっていたら
-  }
+  function closeSheets() { sheetBackup.hidden = true; sheetRestore.hidden = true; dim.hidden = true; pending = null; bkFile.value = ''; }
   function fmtDay(t) { const d = new Date(t); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
   function showLast() {
     let last = null;
@@ -1092,41 +1088,23 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   });
 
   /* ---------- 時計や電池の帯（ステータスバー）の色 ---------- */
-  // ホーム画面のアプリでは、iPhoneは帯の色（theme-color）をページを読みこんだときにしか決めない。
-  // 開いたままライト／ダークが切り替わると帯だけ前の色で残るので、そのときはページを読みこみ直す。
-  // （メモは先に保存する。書いている途中やメニューを開いている間は、一覧に戻るまで待つ）
+  // ホーム画面のアプリでは、iPhoneは帯の色を開いたときに一度決めるだけのことがある。
+  // ライト／ダークが切り替わったら、帯の色（theme-color）を書きかえて伝え直す
   const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
-  const loadedDark = darkMq.matches;
-  const standalone = navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-  const SCROLL_KEY = 'mochimemo.scroll';
-  let reloadWanted = false;
   function syncThemeColor() {
     const color = darkMq.matches ? '#1E2A25' : '#EDF8F1';
     document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.removeAttribute('media');
+      m.removeAttribute('media'); // どちらのモードでも同じ1色にする
       m.setAttribute('content', color);
     });
   }
-  function reloadIfModeChanged() {
-    syncThemeColor();
-    if (!standalone || darkMq.matches === loadedDark) { reloadWanted = false; return; }
-    if (cur || g || !sheetBackup.hidden || !sheetRestore.hidden) { reloadWanted = true; return; }
-    flush();
-    persist();
-    try { sessionStorage.setItem(SCROLL_KEY, String(scroller.scrollTop)); } catch (e) {}
-    location.reload();
-  }
   syncThemeColor();
-  if (darkMq.addEventListener) darkMq.addEventListener('change', reloadIfModeChanged);
-  else if (darkMq.addListener) darkMq.addListener(reloadIfModeChanged); // 古いiOS向け
-  // アプリに戻ってきたときにも確かめる（裏にいる間に切り替わった場合）
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) reloadIfModeChanged(); });
+  if (darkMq.addEventListener) darkMq.addEventListener('change', syncThemeColor);
+  else if (darkMq.addListener) darkMq.addListener(syncThemeColor); // 古いiOS向け
+  // アプリに戻ってきたときにも合わせ直す（裏にいる間に切り替わった場合）
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncThemeColor(); });
 
   render();
-  try {
-    const st = sessionStorage.getItem(SCROLL_KEY);
-    if (st !== null) { sessionStorage.removeItem(SCROLL_KEY); scroller.scrollTop = Number(st) || 0; }
-  } catch (e) {}
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
