@@ -37,7 +37,8 @@
   --blush: #FFB3C7;
   --c0: #FFE3EA; /* いちご */
   --c1: #FFF1C9; /* レモン */
-  --c2: #DDF5E8; /* ミント */
+  --c2: #C8EEDB; /* ミント */
+  --rim: #FFFFFF;
   --c3: #E7E4FF; /* ラベンダー */
   --c4: #DCEFFF; /* ソーダ */
   --c5: #FFE6D3; /* ピーチ */
@@ -47,19 +48,19 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
-    --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(60, 44, 64, .82);
+    --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
     --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
     --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-    --c0: #4B3140; --c1: #4A4230; --c2: #2F4A3E; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
+    --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --rim: rgba(255, 255, 255, .10); --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
-  --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(60, 44, 64, .82);
+  --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
   --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
   --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-  --c0: #4B3140; --c1: #4A4230; --c2: #2F4A3E; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
+  --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --rim: rgba(255, 255, 255, .10); --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
   color-scheme: dark;
 }
 
@@ -133,6 +134,7 @@ main {
 .card {
   position: relative; padding: 14px 18px 12px; border-radius: 22px;
   background: var(--card, var(--c0));
+  border: 2.5px solid var(--rim);
   box-shadow: 0 3px 0 var(--shadow), 0 10px 22px -12px var(--shadow);
   transition: transform .3s cubic-bezier(.2, .9, .3, 1.2), box-shadow .2s;
   cursor: pointer;
