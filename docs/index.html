@@ -220,11 +220,13 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: 20;
   display: flex; flex-direction: column;
   background: var(--paper, var(--c0));
-  transform: translateX(105%); visibility: hidden;
-  transition: transform .34s cubic-bezier(.2, .8, .25, 1), visibility 0s .34s, background-color .3s;
+  /* 閉じているときは画面の右外に置くだけ（隠す→表示の切り替えをすると、iOSが文字を描き忘れたり
+     キーボードを出さなかったりするため）。操作できないようにするのは inert で行う */
+  transform: translateX(calc(100% + 48px)); /* 左の影も見えないところまで */
+  transition: transform .34s cubic-bezier(.2, .8, .25, 1), background-color .3s;
   box-shadow: -10px 0 30px -12px var(--shadow);
 }
-.editor.open { transform: none; visibility: visible; transition: transform .34s cubic-bezier(.2, .8, .25, 1), background-color .3s; }
+.editor.open { transform: none; }
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
@@ -339,7 +341,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   <button type="button" id="toast-undo">もどす</button>
 </div>
 
-<section class="editor" id="editor" aria-hidden="true" aria-label="メモを編集">
+<section class="editor" id="editor" aria-hidden="true" aria-label="メモを編集" inert>
   <div class="ed-bar">
     <button class="back" id="back" type="button" aria-label="一覧にもどる">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -388,7 +390,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
+      // 前のバージョンで残ってしまった空のメモはここで片づける
+      if (raw) return JSON.parse(raw).filter((m) => m.text.trim() !== '');
     } catch (e) {}
     return seed();
   }
@@ -396,7 +399,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   let saveFailed = false;
   function persist() {
     try {
-      localStorage.setItem(KEY, JSON.stringify(memos));
+      // 空のメモは保存しない（もどらずにアプリを閉じても、空のメモが残らないように）
+      localStorage.setItem(KEY, JSON.stringify(memos.filter((m) => m.text.trim() !== '')));
       if (saveFailed) { saveFailed = false; showToast('保存できるようになりました', null); }
       return true;
     } catch (e) {
@@ -658,7 +662,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   let listScroll = 0, closedAt = 0;
   const restoreScroll = () => { window.scrollTo(0, 0); scroller.scrollTop = listScroll; };
   function setSaved(state) {
-    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
+    // まだ何も書いていないメモは、もどると消えるので「ほぞんずみ」とは出さない
+    if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
+    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : state === 'empty' ? 'からっぽ' : 'ほぞんちゅう…';
     saved.classList.toggle('ok', state === 'ok');
     saved.classList.toggle('err', state === 'error');
   }
@@ -666,7 +672,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function flush() {
     if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveNow(); }
   }
-  function openEditor(id, isNew) {
+  function openEditor(id, isNew, focusNow = isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
     listScroll = isNew ? 0 : scroller.scrollTop;
@@ -681,9 +687,10 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.classList.toggle('from-fab', isNew);
     editor.classList.add('open');
     editor.setAttribute('aria-hidden', 'false');
+    editor.inert = false;
     document.body.classList.add('editing');
-    if (isNew) {
-      void editor.offsetHeight; // 表示を確定させてからカーソルを置く（iOSで確実にキーボードを出すため）
+    if (isNew && focusNow) {
+      void editor.offsetHeight;
       text.focus();
     }
     else { text.scrollTop = 0; text.setSelectionRange(0, 0); }
@@ -700,6 +707,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.style.transform = '';
     editor.classList.remove('open', 'from-fab');
     editor.setAttribute('aria-hidden', 'true');
+    editor.inert = true;
     document.body.classList.remove('editing');
     render();
     // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
@@ -731,23 +739,31 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   // もどるボタン：左ふちスワイプと同じく、先にキーボードを閉じてから一覧へ
   $('back').addEventListener('click', () => { text.blur(); closeEditor(); });
   saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
-  function newMemo() {
+  function newMemo(focusNow) {
     const color = memos.length ? (memos[0].color + 1) % COLORS : 0;
     const now = Date.now();
     const m = { id: uid(), color, created: now, updated: now, text: '' };
     memos.unshift(m);
-    openEditor(m.id, true); // カーソルを置くのを最優先（iOSでキーボードを出すため）
+    openEditor(m.id, true, focusNow);
     persist();
     render();
   }
-  // iOSは「指をはなした瞬間（touchend）」に置いたカーソルでいちばん確実にキーボードを出すので、そこで開く。
-  // そのあとに来るclickは打ち消す。マウスではclickで開く
+  // iPhone：指が＋にふれた瞬間（touchstart）に入力画面を開き、指をはなした瞬間（touchend）にカーソルを置く。
+  // カーソルを置くときには入力画面がもう表示されているので、iOSがキーボードを出してくれる。
+  // touchend のあとに来る click は打ち消す。マウスでは click で開いてすぐカーソルを置く
   const fab = $('fab');
+  let fabOpened = false;
+  fab.addEventListener('touchstart', () => {
+    if (cur) return;
+    newMemo(false);
+    fabOpened = true;
+  }, { passive: true });
   fab.addEventListener('touchend', (e) => {
     if (e.cancelable) e.preventDefault();
-    if (!cur) newMemo();
+    if (fabOpened) { fabOpened = false; text.focus(); }
   });
-  fab.addEventListener('click', () => { if (!cur) newMemo(); });
+  fab.addEventListener('touchcancel', () => { fabOpened = false; });
+  fab.addEventListener('click', () => { if (!cur) newMemo(true); });
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 
