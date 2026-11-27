@@ -183,7 +183,7 @@ body.editing .fab { transform: scale(0); }
 
 /* ===== Toast ===== */
 .toast {
-  position: fixed; z-index: 7;
+  position: fixed; z-index: 30;
   left: calc(16px + env(safe-area-inset-left, 0px));
   right: calc(104px + env(safe-area-inset-right, 0px));
   bottom: calc(34px + env(safe-area-inset-bottom, 0px));
@@ -194,6 +194,8 @@ body.editing .fab { transform: scale(0); }
   transform: translateY(140%); opacity: 0; transition: transform .3s cubic-bezier(.3, 1.4, .5, 1), opacity .2s;
 }
 .toast.show { transform: none; opacity: 1; }
+.toast.warn { background: var(--danger); color: var(--danger-ink); font-weight: 700; line-height: 1.5; }
+body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .toast button {
   border: 0; border-radius: 12px; padding: 6px 12px; cursor: pointer;
   background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 13px;
@@ -230,6 +232,7 @@ body.editing .fab { transform: scale(0); }
   padding: 5px 10px; border-radius: 999px; background: var(--surface); transition: color .2s;
 }
 .saved.ok { color: var(--accent); }
+.saved.err { color: var(--danger-ink); background: var(--danger); cursor: pointer; }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
@@ -291,7 +294,7 @@ body.editing .fab { transform: scale(0); }
       もどる
     </button>
     <span class="ed-date" id="ed-date"></span>
-    <span class="saved ok" id="saved">✓ ほぞんずみ</span>
+    <span class="saved ok" id="saved" role="status">✓ ほぞんずみ</span>
   </div>
   <textarea id="text" placeholder="なにをメモする？" aria-label="メモの本文"></textarea>
 </section>
@@ -326,8 +329,20 @@ body.editing .fab { transform: scale(0); }
     } catch (e) {}
     return seed();
   }
+  // 保存に失敗したら（容量オーバーなど）警告を出す。直ったらお知らせする
+  let saveFailed = false;
   function persist() {
-    try { localStorage.setItem(KEY, JSON.stringify(memos)); } catch (e) {}
+    try {
+      localStorage.setItem(KEY, JSON.stringify(memos));
+      if (saveFailed) { saveFailed = false; showToast('保存できるようになりました', null); }
+      return true;
+    } catch (e) {
+      if (!saveFailed) {
+        saveFailed = true;
+        showToast('保存できませんでした。容量がいっぱいかもしれません。いらないメモを消してみてね', null, 10000);
+      }
+      return false;
+    }
   }
   let memos = load();
 
@@ -377,13 +392,14 @@ body.editing .fab { transform: scale(0); }
 
   /* ---------- トースト（もどす） ---------- */
   let toastTimer = null, undoFn = null;
-  function showToast(msg, fn) {
+  function showToast(msg, fn, ms) {
     toastMsg.textContent = msg;
     undoFn = fn;
     toastUndo.hidden = !fn;
+    toast.classList.toggle('warn', !fn && saveFailed);
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(hideToast, 4500);
+    toastTimer = setTimeout(hideToast, ms || 4500);
   }
   function hideToast() { toast.classList.remove('show'); undoFn = null; }
   toastUndo.addEventListener('click', () => { const f = undoFn; hideToast(); if (f) f(); });
@@ -543,21 +559,23 @@ body.editing .fab { transform: scale(0); }
 
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
-  function setSaved(ok) {
-    saved.textContent = ok ? '✓ ほぞんずみ' : 'ほぞんちゅう…';
-    saved.classList.toggle('ok', ok);
+  function setSaved(state) {
+    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
+    saved.classList.toggle('ok', state === 'ok');
+    saved.classList.toggle('err', state === 'error');
   }
+  function saveNow() { setSaved(persist() ? 'ok' : 'error'); }
   function flush() {
-    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; persist(); setSaved(true); }
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; saveNow(); }
   }
   function openEditor(id, isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
-    hideToast();
+    if (!saveFailed) hideToast();
     text.value = cur.text;
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
     edDate.textContent = isNew ? 'あたらしいメモ' : fmt(cur.updated);
-    setSaved(true);
+    setSaved(saveFailed ? 'error' : 'ok');
     editor.style.transform = '';
     editor.classList.add('open');
     editor.setAttribute('aria-hidden', 'false');
@@ -584,11 +602,12 @@ body.editing .fab { transform: scale(0); }
     if (!cur) return;
     cur.text = text.value;
     cur.updated = Date.now();
-    setSaved(false);
+    setSaved('saving');
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { saveTimer = null; persist(); setSaved(true); }, 500);
+    saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
   });
   $('back').addEventListener('click', closeEditor);
+  saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
   $('fab').addEventListener('click', () => {
     const color = memos.length ? (memos[0].color + 1) % COLORS : 0;
     const now = Date.now();
