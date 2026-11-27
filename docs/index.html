@@ -65,6 +65,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html, body { margin: 0; min-height: 100%; }
 body {
   font-family: var(--font);
@@ -218,6 +219,16 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 }
 .editor.open { transform: none; visibility: visible; transition: transform .34s cubic-bezier(.2, .8, .25, 1), background-color .3s; }
 .editor.dragging { transition: none; }
+/* 新しいメモは＋ボタンから「ぽんっ」と開く。最初から定位置にあるので、すぐキーボードを出せる */
+.editor.open.from-fab {
+  transition: none;
+  transform-origin: calc(100% - 55px) calc(100% - 60px);
+  animation: fabpop .34s cubic-bezier(.3, 1.3, .5, 1);
+}
+@keyframes fabpop {
+  from { transform: scale(.15); opacity: 0; border-radius: 48px; }
+  to { transform: none; opacity: 1; border-radius: 0; }
+}
 .ed-bar {
   display: flex; align-items: center; gap: 8px;
   padding-block: calc(10px + env(safe-area-inset-top, 0px)) 8px;
@@ -627,6 +638,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
+  // 一覧のスクロール位置。入力中にiOSが裏のページをずらすので、戻ったときに元に戻す
+  let listScroll = 0;
+  const restoreScroll = () => window.scrollTo(0, listScroll);
   function setSaved(state) {
     saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
     saved.classList.toggle('ok', state === 'ok');
@@ -639,6 +653,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function openEditor(id, isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
+    listScroll = isNew ? 0 : window.scrollY;
     if (!saveFailed) hideToast();
     text.value = cur.text;
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
@@ -647,10 +662,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     edDate.textContent = isNew ? 'あたらしいメモ' : fmt(cur.updated);
     setSaved(saveFailed ? 'error' : 'ok');
     editor.style.transform = '';
+    editor.classList.toggle('from-fab', isNew);
     editor.classList.add('open');
     editor.setAttribute('aria-hidden', 'false');
     document.body.classList.add('editing');
-    if (isNew) text.focus();
+    if (isNew) {
+      void editor.offsetHeight; // 表示を確定させてからカーソルを置く（iOSで確実にキーボードを出すため）
+      text.focus();
+    }
     else { text.scrollTop = 0; text.setSelectionRange(0, 0); }
   }
   function closeEditor() {
@@ -663,10 +682,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       persist();
     }
     editor.style.transform = '';
-    editor.classList.remove('open');
+    editor.classList.remove('open', 'from-fab');
     editor.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('editing');
     render();
+    // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
+    restoreScroll();
+    requestAnimationFrame(restoreScroll);
+    setTimeout(restoreScroll, 350);
   }
   text.addEventListener('input', () => {
     if (!cur) return;
