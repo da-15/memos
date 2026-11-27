@@ -350,6 +350,50 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
 }
+
+/* ===== バックアップ ===== */
+.gear {
+  margin-left: auto; flex: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; background: transparent; color: var(--ink-soft); /* 白い丸はなし */
+}
+.gear svg { width: 24px; height: 24px; }
+.gear:active { transform: scale(.9) rotate(30deg); }
+.dim { position: fixed; inset: 0; z-index: 40; background: rgba(40, 25, 35, .35); animation: fadein .2s ease; }
+@keyframes fadein { from { opacity: 0; } }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 41;
+  max-width: 640px; margin: 0 auto;
+  padding-block: 10px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+  border-radius: 28px 28px 0 0; background: var(--bg);
+  box-shadow: 0 -10px 30px -10px var(--shadow);
+  animation: sheetup .3s cubic-bezier(.2, .9, .3, 1.1);
+}
+@keyframes sheetup { from { transform: translateY(100%); } }
+.grab { width: 44px; height: 5px; border-radius: 5px; background: var(--line); margin: 0 auto 14px; }
+.sheet h2 { margin: 0 0 4px; font-size: 20px; }
+.sheet .sub { margin: 0 0 16px; font-size: 13px; color: var(--ink-soft); line-height: 1.6; word-break: break-all; }
+.last { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-bottom: 14px; border-radius: 18px; background: var(--surface); font-size: 14px; line-height: 1.5; }
+.last b { color: var(--accent); }
+.last small { color: var(--ink-soft); font-size: 12px; }
+.last .mochi { width: 34px; height: 28px; animation: none; }
+.bigbtn {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; margin-bottom: 10px;
+  border: 0; border-radius: 20px; cursor: pointer; text-align: left;
+  font-size: 16px; font-weight: 700; box-shadow: 0 3px 0 var(--shadow);
+}
+.bigbtn small { display: block; font-size: 12px; font-weight: 500; opacity: .85; margin-top: 2px; }
+.bigbtn svg { width: 26px; height: 26px; flex: none; }
+.bigbtn:active, .opt:active { transform: scale(.98); }
+.bigbtn.primary { background: var(--accent); color: var(--accent-ink); }
+.bigbtn.soft { background: var(--surface); color: var(--ink); }
+.choice { display: grid; gap: 10px; }
+.opt { display: block; width: 100%; padding: 14px 16px; border: 0; border-radius: 20px; cursor: pointer; text-align: left; background: var(--surface); box-shadow: 0 3px 0 var(--shadow); }
+.opt b { display: block; font-size: 16px; margin-bottom: 3px; }
+.opt span { font-size: 12.5px; color: var(--ink-soft); line-height: 1.55; }
+.opt.danger b { color: var(--danger); }
+.cancel { width: 100%; margin-top: 6px; padding: 12px; border: 0; background: transparent; cursor: pointer; font-size: 15px; font-weight: 700; color: var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -363,6 +407,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   </svg>
   <h1>もちメモ</h1>
   <span class="count" id="count">0こ</span>
+  <button class="gear" id="gear" type="button" aria-label="バックアップ" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
 </header>
 <p class="hint" id="hint">タップでひらく・長押しで並べかえ・左にスワイプで削除</p>
 
@@ -382,6 +429,30 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 </div>
 
 <button class="fab" id="fab" type="button" aria-label="新しいメモを書く"></button>
+
+
+<!-- バックアップ（下からせり上がるメニュー） -->
+<div class="dim" id="dim" hidden></div>
+<section class="sheet" id="sheet-backup" role="dialog" aria-modal="true" aria-labelledby="bk-title" hidden>
+  <div class="grab"></div>
+  <h2 id="bk-title">バックアップ</h2>
+  <p class="sub">メモを1つのファイルにして、iCloud Drive などに保存できます。iPhoneを変えたときや、もしものときに戻せます。</p>
+  <div class="last"><svg class="mochi" viewBox="0 0 64 52" aria-hidden="true"><path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="var(--mochi)" stroke="var(--mochi-line)" stroke-width="2.5"/><circle cx="23" cy="30" r="2.7" fill="#5A3D4B"/><circle cx="41" cy="30" r="2.7" fill="#5A3D4B"/><ellipse cx="16.5" cy="36" rx="4.2" ry="2.5" fill="var(--blush)"/><ellipse cx="47.5" cy="36" rx="4.2" ry="2.5" fill="var(--blush)"/><path d="M29 35q3 3.2 6 0" stroke="#5A3D4B" stroke-width="2" fill="none" stroke-linecap="round"/></svg><div id="bk-last"></div></div>
+  <button class="bigbtn primary" id="bk-save" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5"/><path d="M4 14v4a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/></svg><span>バックアップする<small>「"ファイル"に保存」で iCloud Drive へ</small></span></button>
+  <button class="bigbtn soft" id="bk-open" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5"/><path d="M4 14v4a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/></svg><span>バックアップから戻す<small>保存したファイルを選びます</small></span></button>
+  <button class="cancel" id="bk-close" type="button">とじる</button>
+  <input type="file" id="bk-file" accept=".json,application/json" hidden>
+</section>
+<section class="sheet" id="sheet-restore" role="dialog" aria-modal="true" aria-labelledby="rs-title" hidden>
+  <div class="grab"></div>
+  <h2 id="rs-title">どうやって戻す？</h2>
+  <p class="sub" id="rs-file"></p>
+  <div class="choice">
+    <button class="opt" id="rs-add" type="button"><b>いまのメモに たす</b><span>バックアップのメモを追加します。同じメモは二重になりません。</span></button>
+    <button class="opt danger" id="rs-replace" type="button"><b>まるごと入れかえる</b><span>いまのメモをぜんぶ消して、バックアップの中身にします。</span></button>
+  </div>
+  <button class="cancel" id="rs-cancel" type="button">やめる</button>
+</section>
 
 <div class="toast" id="toast" role="status" aria-live="polite">
   <span id="toast-msg"></span>
@@ -903,6 +974,117 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
   }
+
+
+  /* ---------- バックアップ（ファイルに書き出す・読み込む） ---------- */
+  const LAST_KEY = 'mochimemo.lastBackup';
+  const dim = $('dim'), sheetBackup = $('sheet-backup'), sheetRestore = $('sheet-restore');
+  const bkFile = $('bk-file');
+  let pending = null; // 読み込んだバックアップの中身（戻し方を選ぶまで）
+  function openSheet(sh) {
+    [sheetBackup, sheetRestore].forEach((x) => { x.hidden = x !== sh; });
+    dim.hidden = false;
+  }
+  function closeSheets() { sheetBackup.hidden = true; sheetRestore.hidden = true; dim.hidden = true; pending = null; bkFile.value = ''; }
+  function fmtDay(t) { const d = new Date(t); return (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+  function showLast() {
+    let last = null;
+    try { last = JSON.parse(localStorage.getItem(LAST_KEY)); } catch (e) {}
+    const el = $('bk-last');
+    if (!last || !last.at) { el.textContent = 'まだバックアップしていません'; return; }
+    const days = Math.floor((Date.now() - last.at) / 864e5);
+    el.innerHTML = '';
+    el.append('前のバックアップ：');
+    const b = document.createElement('b'); b.textContent = fmtDay(last.at); el.append(b);
+    el.append('（' + (days === 0 ? 'きょう' : days + '日前') + '）');
+    el.append(document.createElement('br'));
+    const sm = document.createElement('small'); sm.textContent = 'メモ ' + last.count + 'こ'; el.append(sm);
+  }
+  $('gear').addEventListener('click', () => { showLast(); openSheet(sheetBackup); });
+  dim.addEventListener('click', closeSheets);
+  $('bk-close').addEventListener('click', closeSheets);
+  $('rs-cancel').addEventListener('click', closeSheets);
+
+  function backupName() {
+    const d = new Date(), z = (n) => String(n).padStart(2, '0');
+    return 'mochimemo-' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '.json';
+  }
+  $('bk-save').addEventListener('click', async () => {
+    const list = memos.filter((m) => m.text.trim() !== '');
+    const data = { app: 'mochimemo', version: 1, exportedAt: new Date().toISOString(), fontSize, memos: list };
+    const name = backupName();
+    const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' });
+    const done = () => {
+      try { localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), count: list.length })); } catch (e) {}
+      closeSheets();
+      showToast('バックアップしました（メモ ' + list.length + 'こ）', null);
+    };
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // iPhone：共有メニューが出るので「"ファイル"に保存」を選ぶ
+        await navigator.share({ files: [file], title: name });
+        done();
+      } else {
+        // 共有メニューがない環境（パソコンなど）：ファイルとしてダウンロード
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a'); a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        done();
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // 共有メニューを閉じただけ
+      showToast('バックアップできませんでした。もう一度ためしてね', null);
+    }
+  });
+
+  $('bk-open').addEventListener('click', () => { bkFile.value = ''; bkFile.click(); });
+  function cleanMemo(m) {
+    if (!m || typeof m.text !== 'string' || m.text.trim() === '') return null;
+    const now = Date.now();
+    return {
+      id: typeof m.id === 'string' && m.id ? m.id : uid(),
+      color: Number.isInteger(m.color) ? ((m.color % COLORS) + COLORS) % COLORS : 0,
+      created: Number.isFinite(m.created) ? m.created : now,
+      updated: Number.isFinite(m.updated) ? m.updated : now,
+      text: m.text,
+    };
+  }
+  bkFile.addEventListener('change', async () => {
+    const f = bkFile.files && bkFile.files[0];
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const raw = Array.isArray(data) ? data : data && Array.isArray(data.memos) ? data.memos : null;
+      if (!raw) throw new Error('not a backup');
+      const list = raw.map(cleanMemo).filter(Boolean);
+      pending = list;
+      $('rs-file').textContent = f.name + '（メモ ' + list.length + 'こ）';
+      openSheet(sheetRestore);
+    } catch (e) {
+      closeSheets();
+      showToast('このファイルは読み込めませんでした。もちメモのバックアップを選んでね', null, 6000);
+    }
+  });
+  function applyRestore(next, msg) {
+    const before = memos.slice();
+    memos = next;
+    persist();
+    closeSheets();
+    render();
+    showToast(msg, () => { memos = before; persist(); render(); }, 6000); // 「もどす」で元に戻せる
+  }
+  $('rs-add').addEventListener('click', () => {
+    if (!pending) return;
+    const have = new Set(memos.map((m) => m.id));
+    const add = pending.filter((m) => !have.has(m.id));
+    const same = pending.length - add.length;
+    applyRestore(memos.concat(add), add.length + 'こ追加しました' + (same ? '（同じメモ ' + same + 'こ はそのまま）' : ''));
+  });
+  $('rs-replace').addEventListener('click', () => {
+    if (!pending) return;
+    applyRestore(pending.slice(), 'バックアップの ' + pending.length + 'こ に入れかえました');
+  });
 
   render();
 
