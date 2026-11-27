@@ -1,5 +1,5 @@
 // もちメモ service worker: オフラインでも開けるようにアプリ本体をキャッシュする
-const CACHE = 'mochimemo-v26';
+const CACHE = 'mochimemo-v27';
 const SHELL = [
   './',
   './index.html',
@@ -51,7 +51,12 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
-        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); return res; })
+        .then((res) => {
+          // ちゃんと取れたときだけオフライン用に保存する。GitHub がエラーを返したときは、保存してあるページを出す
+          if (!res.ok) return caches.match('./index.html').then((hit) => hit || res);
+          const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy));
+          return res;
+        })
         .catch(() => caches.match('./index.html'))
     );
     return;

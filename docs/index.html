@@ -5,7 +5,6 @@
 <!-- maximum-scale=1：16pxより小さい入力欄をタップしたとき、iPhoneが画面を勝手に拡大しないように（指での拡大はiPhoneではそのままできる） -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>もちメモ</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#EDF8F1" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1E2A25" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,7 +38,6 @@
   --c0: #FFE3EA; /* いちご */
   --c1: #FFF1C9; /* レモン */
   --c2: #C8EEDB; /* ミント */
-  --rim: #FFFFFF;
   --pal-y: #F2BE3C;
   --pal-g: #4FBF8C;
   --pal-b: #5EA2E6;
@@ -55,7 +53,7 @@
     --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
     --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
     --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-    --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --rim: rgba(255, 255, 255, .10); --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
+    --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
     color-scheme: dark;
   }
 }
@@ -64,7 +62,7 @@
   --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
   --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
   --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-  --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --rim: rgba(255, 255, 255, .10); --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
+  --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
   color-scheme: dark;
 }
 
@@ -85,9 +83,6 @@ body {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
 }
-body.editing { overflow: hidden; }
-/* 入力中も裏の一覧は隠さない（入力画面がキーボードの裏まで全面をおおうので見えない）。
-   隠す→表示の切り替えをキーボードが閉じる最中にすると、iOSが一番上のタイトルを描き忘れるため */
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
 
@@ -259,8 +254,13 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .saved::before { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .saved.st-empty::before { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--ink-soft); opacity: .45; }
 .saved.st-saving::before { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: savepulse 1s ease-in-out infinite; }
-.saved.st-ok::before { width: 13px; height: 7px; border: solid var(--accent); border-width: 0 0 3px 3px; border-radius: 1px; transform: translate(-50%, -50%) translate(var(--chk-x, 0px), var(--chk-y, -2px)) rotate(-45deg); }
+.saved.st-ok::before { width: 13px; height: 7px; border: solid var(--accent); border-width: 0 0 3px 3px; border-radius: 1px; transform: translate(-50%, calc(-50% - 2px)) rotate(-45deg); }
 @keyframes savepulse { 50% { scale: .55; opacity: .5; } }
+.saved.st-err {
+  width: auto; height: auto; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--danger-ink); background: var(--danger);
+}
+.saved.st-err::before { display: none; }
 /* 文字の大きさボタンとスライドバー */
 .size-btn {
   flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
@@ -327,11 +327,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   border: solid var(--accent); border-width: 0 3px 3px 0; border-radius: 1px;
   transform: translate(-50%, -50%) rotate(45deg);
 }
-.saved.st-err {
-  width: auto; height: auto; padding: 5px 10px; border-radius: 999px; cursor: pointer;
-  font-size: 12px; font-weight: 700; color: var(--danger-ink); background: var(--danger);
-}
-.saved.st-err::before { display: none; }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
@@ -515,8 +510,12 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      // 前のバージョンで残ってしまった空のメモはここで片づける
-      if (raw) return JSON.parse(raw).filter((m) => m.text.trim() !== '');
+      // 空のメモ（前のバージョンで残ったもの）や壊れた項目だけを外す。
+      // 1つ壊れていても、ほかのメモはそのまま読む（見本のメモで上書きしてしまわないように）
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data)) return data.filter((m) => m && typeof m.text === 'string' && m.text.trim() !== '');
+      }
     } catch (e) {}
     return seed();
   }
@@ -531,7 +530,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     } catch (e) {
       if (!saveFailed) {
         saveFailed = true;
-        showToast('保存できませんでした。容量がいっぱいかもしれません。いらないメモを消してみてね', null, 10000);
+        showToast('保存できませんでした。容量がいっぱいかもしれません。いらないメモを消してみてね', null, 10000, true);
       }
       return false;
     }
@@ -584,11 +583,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 
   /* ---------- トースト（もどす） ---------- */
   let toastTimer = null, undoFn = null;
-  function showToast(msg, fn, ms) {
+  function showToast(msg, fn, ms, warn) {
     toastMsg.textContent = msg;
     undoFn = fn;
     toastUndo.hidden = !fn;
-    toast.classList.toggle('warn', !fn && saveFailed);
+    toast.classList.toggle('warn', !!warn);
     toast.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(hideToast, ms || 4500);
@@ -1010,14 +1009,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     return 'mochimemo-' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '.json';
   }
   $('bk-save').addEventListener('click', async () => {
-    const list = memos.filter((m) => m.text.trim() !== '');
-    const data = { app: 'mochimemo', version: 1, exportedAt: new Date().toISOString(), fontSize, memos: list };
+    const kept = memos.filter((m) => m.text.trim() !== '');
+    const data = { app: 'mochimemo', version: 1, exportedAt: new Date().toISOString(), memos: kept };
     const name = backupName();
     const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' });
     const done = () => {
-      try { localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), count: list.length })); } catch (e) {}
+      try { localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), count: kept.length })); } catch (e) {}
       closeSheets();
-      showToast('バックアップしました（メモ ' + list.length + 'こ）', null);
+      showToast('バックアップしました（メモ ' + kept.length + 'こ）', null);
     };
     try {
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1034,7 +1033,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       }
     } catch (e) {
       if (e && e.name === 'AbortError') return; // 共有メニューを閉じただけ
-      showToast('バックアップできませんでした。もう一度ためしてね', null);
+      closeSheets(); // メニューの裏にお知らせが隠れないように
+      showToast('バックアップできませんでした。もう一度ためしてね', null, 6000, true);
     }
   });
 
@@ -1057,13 +1057,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       const data = JSON.parse(await f.text());
       const raw = Array.isArray(data) ? data : data && Array.isArray(data.memos) ? data.memos : null;
       if (!raw) throw new Error('not a backup');
-      const list = raw.map(cleanMemo).filter(Boolean);
-      pending = list;
-      $('rs-file').textContent = f.name + '（メモ ' + list.length + 'こ）';
+      const seen = new Set();
+      const found = raw.map(cleanMemo).filter((m) => m && !seen.has(m.id) && seen.add(m.id)); // 同じメモが2回入っていたら1つに
+      pending = found;
+      $('rs-file').textContent = f.name + '（メモ ' + found.length + 'こ）';
       openSheet(sheetRestore);
     } catch (e) {
       closeSheets();
-      showToast('このファイルは読み込めませんでした。もちメモのバックアップを選んでね', null, 6000);
+      showToast('このファイルは読み込めませんでした。もちメモのバックアップを選んでね', null, 6000, true);
     }
   });
   function applyRestore(next, msg) {
