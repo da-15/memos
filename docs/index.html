@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>もちメモ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#FFF4F6" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#2A2030" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EDF8F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1E2A25" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -20,15 +20,15 @@
 <style>
 /* Layout: one column of soft pastel "mochi" cards on a polka-dot ground; floating round + button; editor slides over as a sheet of lined paper. */
 :root {
-  --bg: #FFF4F6;
-  --dot: rgba(255, 111, 156, .10);
+  --bg: #EDF8F1;
+  --dot: rgba(80, 170, 120, .14);
   --ink: #5A3D4B;
   --ink-soft: #A08390;
   --accent: #FF6F9C;
   --accent-2: #FF9DBB;
   --accent-ink: #FFFFFF;
   --surface: rgba(255, 255, 255, .78);
-  --shadow: rgba(214, 110, 145, .22);
+  --shadow: rgba(90, 150, 115, .24);
   --danger: #FF7A8A;
   --danger-ink: #FFFFFF;
   --line: rgba(200, 90, 130, .16);
@@ -46,7 +46,7 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #2A2030; --dot: rgba(255, 141, 177, .07); --ink: #F7E8EF; --ink-soft: #B59DAA;
+    --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
     --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(60, 44, 64, .82);
     --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
     --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
@@ -55,7 +55,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #2A2030; --dot: rgba(255, 141, 177, .07); --ink: #F7E8EF; --ink-soft: #B59DAA;
+  --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
   --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(60, 44, 64, .82);
   --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
   --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
