@@ -1,15 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <radialGradient id="g" cx="35%" cy="28%" r="80%">
-      <stop offset="0" stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#FFFFFF"/>
-    </radialGradient>
+    <linearGradient id="bg" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFBCD1"/>
+      <stop offset="1" stop-color="#FFA6C3"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-100%" width="140%" height="300%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
   </defs>
-  <rect width="512" height="512" fill="url(#g)"/>
-  <g transform="translate(64 96) scale(6)">
-    <path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="#FFFFFF" stroke="#F4B7C9" stroke-width="2.4"/>
-    <circle cx="23" cy="30" r="2.7" fill="#5A3D4B"/><circle cx="41" cy="30" r="2.7" fill="#5A3D4B"/>
-    <ellipse cx="16.5" cy="36" rx="4.2" ry="2.5" fill="#FFB3C7"/><ellipse cx="47.5" cy="36" rx="4.2" ry="2.5" fill="#FFB3C7"/>
-    <path d="M29 35q3 3.2 6 0" stroke="#5A3D4B" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- おもちの下のやわらかい影 -->
+  <ellipse cx="258" cy="404" rx="172" ry="19" fill="#E9799F" opacity=".6" filter="url(#soft)"/>
+  <g transform="translate(51 99) scale(6.4)">
+    <path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="#FFFFFF" stroke="#FF94B5" stroke-width="3.2" stroke-linejoin="round"/>
+    <circle cx="23" cy="28.6" r="3.1" fill="#563440"/><circle cx="41" cy="28.6" r="3.1" fill="#563440"/>
+    <ellipse cx="15.6" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/><ellipse cx="48.4" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/>
+    <path d="M28.2 33.6q3.8 3.8 7.6 0" stroke="#563440" stroke-width="2.1" fill="none" stroke-linecap="round"/>
   </g>
 </svg>
