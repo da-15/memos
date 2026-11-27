@@ -9,14 +9,9 @@
     </filter>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- メモ用紙（角を折ったもの） -->
-  <g>
-    <path d="M144 88h194l60 60v240a30 30 0 0 1-30 30H144a30 30 0 0 1-30-30V118a30 30 0 0 1 30-30z" fill="#FFFFFF"/><path d="M338 88v42a18 18 0 0 0 18 18h42z" fill="#FFD6E3"/>
-    <path d="M150 168h212" stroke="#FFC6D8" stroke-width="7" stroke-linecap="round"/><path d="M150 208h212" stroke="#FFC6D8" stroke-width="7" stroke-linecap="round"/><path d="M150 248h212" stroke="#FFC6D8" stroke-width="7" stroke-linecap="round"/><path d="M150 288h212" stroke="#FFC6D8" stroke-width="7" stroke-linecap="round"/><path d="M150 328h212" stroke="#FFC6D8" stroke-width="7" stroke-linecap="round"/>
-  </g>
   <!-- おもちの下のやわらかい影 -->
-  <ellipse cx="257" cy="430" rx="140" ry="15" fill="#E07A9E" opacity=".55" filter="url(#soft)"/>
-  <g transform="translate(94 192) scale(5.2)">
+  <ellipse cx="257" cy="422" rx="198" ry="20" fill="#E9799F" opacity=".6" filter="url(#soft)"/>
+  <g transform="translate(3.2 46.7) scale(7.9)">
     <path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="#FFFFFF" stroke="#FF94B5" stroke-width="3.2" stroke-linejoin="round"/>
     <circle cx="23" cy="28.6" r="3.1" fill="#563440"/><circle cx="41" cy="28.6" r="3.1" fill="#563440"/>
     <ellipse cx="15.6" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/><ellipse cx="48.4" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/>
