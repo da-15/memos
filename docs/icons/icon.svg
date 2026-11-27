@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <radialGradient id="g" cx="35%" cy="28%" r="80%">
-      <stop offset="0" stop-color="#FFC2D4"/>
-      <stop offset="1" stop-color="#FF8FB1"/>
+      <stop offset="0" stop-color="#E3F8EB"/>
+      <stop offset="1" stop-color="#A9E2C3"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#g)"/>
