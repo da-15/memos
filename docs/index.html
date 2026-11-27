@@ -390,7 +390,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return JSON.parse(raw);
+      // 前のバージョンで残ってしまった空のメモはここで片づける
+      if (raw) return JSON.parse(raw).filter((m) => m.text.trim() !== '');
     } catch (e) {}
     return seed();
   }
@@ -398,7 +399,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   let saveFailed = false;
   function persist() {
     try {
-      localStorage.setItem(KEY, JSON.stringify(memos));
+      // 空のメモは保存しない（もどらずにアプリを閉じても、空のメモが残らないように）
+      localStorage.setItem(KEY, JSON.stringify(memos.filter((m) => m.text.trim() !== '')));
       if (saveFailed) { saveFailed = false; showToast('保存できるようになりました', null); }
       return true;
     } catch (e) {
