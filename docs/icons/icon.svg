@@ -10,8 +10,8 @@
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
   <!-- おもちの下のやわらかい影 -->
-  <ellipse cx="257" cy="436" rx="215" ry="20" fill="#E9799F" opacity=".6" filter="url(#soft)"/>
-  <g transform="translate(-19.2 27.5) scale(8.6)">
+  <ellipse cx="257" cy="422" rx="198" ry="20" fill="#E9799F" opacity=".6" filter="url(#soft)"/>
+  <g transform="translate(3.2 46.7) scale(7.9)">
     <path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="#FFFFFF" stroke="#FF94B5" stroke-width="3.2" stroke-linejoin="round"/>
     <circle cx="23" cy="28.6" r="3.1" fill="#563440"/><circle cx="41" cy="28.6" r="3.1" fill="#563440"/>
     <ellipse cx="15.6" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/><ellipse cx="48.4" cy="34.6" rx="4.8" ry="2.9" fill="#FFB0C6"/>
