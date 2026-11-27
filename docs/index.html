@@ -1087,6 +1087,23 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     applyRestore(pending.slice(), 'バックアップの ' + pending.length + 'こ に入れかえました');
   });
 
+  /* ---------- 時計や電池の帯（ステータスバー）の色 ---------- */
+  // ホーム画面のアプリでは、iPhoneは帯の色を開いたときに一度決めるだけのことがある。
+  // ライト／ダークが切り替わったら、帯の色（theme-color）を書きかえて伝え直す
+  const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+  function syncThemeColor() {
+    const color = darkMq.matches ? '#1E2A25' : '#EDF8F1';
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.removeAttribute('media'); // どちらのモードでも同じ1色にする
+      m.setAttribute('content', color);
+    });
+  }
+  syncThemeColor();
+  if (darkMq.addEventListener) darkMq.addEventListener('change', syncThemeColor);
+  else if (darkMq.addListener) darkMq.addListener(syncThemeColor); // 古いiOS向け
+  // アプリに戻ってきたときにも合わせ直す（裏にいる間に切り替わった場合）
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncThemeColor(); });
+
   render();
 
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
