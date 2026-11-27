@@ -85,11 +85,8 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 body.editing { overflow: hidden; }
-/* 入力中は裏の一覧を隠す（スライドが終わってから）。左ふちスワイプで戻るときだけ見せる */
-body.editing .top, body.editing .hint, body.editing .scroller {
-  visibility: hidden; transition: visibility 0s .34s;
-}
-body.editing.peek .top, body.editing.peek .hint, body.editing.peek .scroller { visibility: visible; transition: none; }
+/* 入力中も裏の一覧は隠さない（入力画面がキーボードの裏まで全面をおおうので見えない）。
+   隠す→表示の切り替えをキーボードが閉じる最中にすると、iOSが一番上のタイトルを描き忘れるため */
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
 
@@ -765,7 +762,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const t = e.touches[0];
     const dx = t.clientX - eg.x0, dy = t.clientY - eg.y0;
     if (!eg.on) {
-      if (dx > 10 && dx > Math.abs(dy)) { eg.on = true; editor.classList.add('dragging'); document.body.classList.add('peek'); text.blur(); }
+      if (dx > 10 && dx > Math.abs(dy)) { eg.on = true; editor.classList.add('dragging'); text.blur(); }
       else if (Math.abs(dy) > 10) { eg = null; return; }
     }
     if (eg.on) {
@@ -779,7 +776,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const s = eg; eg = null;
     if (!s.on) return;
     editor.classList.remove('dragging');
-    document.body.classList.remove('peek');
     if (s.dx > window.innerWidth * 0.3) closeEditor();
     else editor.style.transform = '';
   };
