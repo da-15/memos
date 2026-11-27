@@ -248,11 +248,52 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .back svg { width: 20px; height: 20px; }
 .back:active { transform: scale(.94); }
 .ed-date { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* 保存の印：ふだんは小さな丸い印だけ（言葉は読み上げ用に残し、画面には出さない）。保存できないときだけ文字で出す */
 .saved {
-  min-width: 84px; text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-soft);
-  padding: 5px 10px; border-radius: 999px; background: var(--surface); transition: color .2s;
+  flex: none; display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surface); font-size: 0; color: transparent;
 }
-.saved.ok { color: var(--accent); }
+.saved::before { content: ""; }
+.saved.empty::before { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--line); }
+.saved.saving::before { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: savepulse 1s ease-in-out infinite; }
+.saved.ok::before { width: 13px; height: 7px; border: solid var(--accent); border-width: 0 0 3px 3px; border-radius: 1px; transform: translateY(-2px) rotate(-45deg); }
+@keyframes savepulse { 50% { transform: scale(.55); opacity: .5; } }
+/* 文字の大きさボタンとスライドバー */
+.size-btn {
+  flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--ink); font-size: 18px; font-weight: 700; line-height: 1;
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: transform .25s cubic-bezier(.3, 1.6, .5, 1), background-color .2s;
+}
+.size-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-ink); }
+.size-btn:active { transform: scale(.9); }
+.size-panel {
+  display: flex; align-items: center; gap: 12px;
+  margin-block: 2px 12px;
+  margin-left: max(16px, env(safe-area-inset-left, 0px));
+  margin-right: max(16px, env(safe-area-inset-right, 0px));
+  padding: 8px 16px; border-radius: 999px;
+  background: var(--surface); box-shadow: 0 2px 0 var(--shadow);
+  animation: drop .28s cubic-bezier(.3, 1.4, .5, 1);
+}
+.sp-a { font-weight: 700; color: var(--ink-soft); line-height: 1; }
+.sp-small { font-size: 13px; }
+.sp-big { font-size: 24px; }
+.sp-val { min-width: 2ch; font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; }
+#size-range { -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; height: 32px; margin: 0; background: transparent; }
+#size-range::-webkit-slider-runnable-track {
+  height: 8px; border-radius: 8px;
+  background: linear-gradient(to right, var(--accent) 0 var(--fill, 10%), var(--line) var(--fill, 10%) 100%);
+}
+#size-range::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px; border-radius: 50%;
+  background: #FFFFFF; border: 3px solid var(--accent); box-shadow: 0 2px 0 var(--shadow);
+}
+#size-range::-moz-range-track { height: 8px; border-radius: 8px; background: var(--line); }
+#size-range::-moz-range-progress { height: 8px; border-radius: 8px; background: var(--accent); }
+#size-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #FFFFFF; border: 3px solid var(--accent); }
 .color-btn {
   flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
   display: grid; place-items: center;
@@ -284,7 +325,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   border: solid var(--accent); border-width: 0 3px 3px 0; border-radius: 1px;
   transform: translate(-50%, -50%) rotate(45deg);
 }
-.saved.err { color: var(--danger-ink); background: var(--danger); cursor: pointer; }
+.saved.err {
+  width: auto; height: auto; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--danger-ink); background: var(--danger);
+}
+.saved.err::before { display: none; }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
@@ -348,6 +393,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       もどる
     </button>
     <span class="ed-date" id="ed-date"></span>
+    <button class="size-btn" id="size-btn" type="button" aria-label="文字の大きさ" aria-expanded="false" aria-controls="size-panel"><span aria-hidden="true">あ</span></button>
     <button class="color-btn" id="color-btn" type="button" aria-label="メモの色をえらぶ" aria-expanded="false" aria-controls="palette">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -357,7 +403,13 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
         <circle cx="17.2" cy="11.2" r="1.7" fill="var(--pal-b)"/>
       </svg>
     </button>
-    <span class="saved ok" id="saved" role="status">✓ ほぞんずみ</span>
+    <span class="saved ok" id="saved" role="status">ほぞんずみ</span>
+  </div>
+  <div class="size-panel" id="size-panel" hidden>
+    <span class="sp-a sp-small" aria-hidden="true">あ</span>
+    <input type="range" id="size-range" min="16" max="26" step="1" value="17" aria-label="文字の大きさ">
+    <span class="sp-a sp-big" aria-hidden="true">あ</span>
+    <span class="sp-val" id="sp-val" aria-hidden="true">17</span>
   </div>
   <div class="palette" id="palette" role="radiogroup" aria-label="メモの色" hidden></div>
   <textarea id="text" placeholder="なにをメモする？" aria-label="メモの本文"></textarea>
@@ -642,6 +694,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   });
   function markColor(c) { swatches.forEach((b, i) => b.setAttribute('aria-checked', String(i === c))); }
   function togglePalette(show) {
+    if (show) toggleSize(false);
     palette.hidden = !show;
     colorBtn.setAttribute('aria-expanded', String(show));
   }
@@ -654,7 +707,31 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     setTimeout(() => togglePalette(false), 220);
   }
   colorBtn.addEventListener('click', () => togglePalette(palette.hidden));
-  text.addEventListener('focus', () => togglePalette(false));
+  text.addEventListener('focus', () => { togglePalette(false); toggleSize(false); });
+
+  /* ---------- 文字の大きさ（スライドバー・書く画面だけ。アプリが覚えておく） ---------- */
+  const SIZE_KEY = 'mochimemo.fontsize';
+  const sizeBtn = $('size-btn'), sizePanel = $('size-panel'), sizeRange = $('size-range'), spVal = $('sp-val');
+  const SIZE_MIN = 16, SIZE_MAX = 26; // 16pxより小さいと、iPhoneが入力時に画面を勝手に拡大する
+  let fontSize = 17;
+  try { const v = parseInt(localStorage.getItem(SIZE_KEY), 10); if (v >= SIZE_MIN && v <= SIZE_MAX) fontSize = v; } catch (e) {}
+  function applySize(v) {
+    fontSize = v;
+    text.style.fontSize = v + 'px';
+    text.style.setProperty('--lh', Math.round(v * 1.88) + 'px'); // 罫線の間隔も一緒に
+    sizeRange.value = String(v);
+    sizeRange.style.setProperty('--fill', ((v - SIZE_MIN) / (SIZE_MAX - SIZE_MIN) * 100) + '%');
+    spVal.textContent = String(v);
+  }
+  function toggleSize(show) {
+    if (show) togglePalette(false);
+    sizePanel.hidden = !show;
+    sizeBtn.setAttribute('aria-expanded', String(show));
+  }
+  sizeBtn.addEventListener('click', () => toggleSize(sizePanel.hidden));
+  sizeRange.addEventListener('input', () => applySize(Number(sizeRange.value)));
+  sizeRange.addEventListener('change', () => { try { localStorage.setItem(SIZE_KEY, String(fontSize)); } catch (e) {} });
+  applySize(fontSize);
 
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
@@ -664,9 +741,12 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function setSaved(state) {
     // まだ何も書いていないメモは、もどると消えるので「ほぞんずみ」とは出さない
     if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
-    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : state === 'empty' ? 'からっぽ' : 'ほぞんちゅう…';
+    // 言葉は読み上げ用。画面には、保存できないとき以外は印だけが出る
+    saved.textContent = state === 'ok' ? 'ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : state === 'empty' ? 'からっぽ' : 'ほぞんちゅう';
     saved.classList.toggle('ok', state === 'ok');
     saved.classList.toggle('err', state === 'error');
+    saved.classList.toggle('empty', state === 'empty');
+    saved.classList.toggle('saving', state === 'saving');
   }
   function saveNow() { setSaved(persist() ? 'ok' : 'error'); }
   function flush() {
@@ -681,6 +761,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
     markColor(cur.color % COLORS);
     togglePalette(false);
+    toggleSize(false);
     edDate.textContent = isNew ? 'あたらしいメモ' : fmt(cur.updated);
     setSaved(saveFailed ? 'error' : 'ok');
     editor.style.transform = '';
