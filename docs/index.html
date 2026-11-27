@@ -5,8 +5,7 @@
 <!-- maximum-scale=1：16pxより小さい入力欄をタップしたとき、iPhoneが画面を勝手に拡大しないように（指での拡大はiPhoneではそのままできる） -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>もちメモ</title>
-<meta name="theme-color" content="#EDF8F1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1E2A25" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#EDF8F1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -46,24 +45,6 @@
   --c5: #FFE6D3; /* ピーチ */
   --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
-    --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
-    --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
-    --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-    --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #1E2A25; --dot: rgba(140, 220, 175, .08); --ink: #F7E8EF; --ink-soft: #B59DAA;
-  --accent: #FF8DB1; --accent-2: #FFB0C8; --accent-ink: #3A1F2C; --surface: rgba(44, 64, 56, .85);
-  --shadow: rgba(0, 0, 0, .35); --danger: #E8697A; --danger-ink: #FFFFFF; --line: rgba(255, 170, 200, .13);
-  --mochi: #FFF6F9; --mochi-line: #F4B7C9; --blush: #FF9DBB;
-  --c0: #4B3140; --c1: #4A4230; --c2: #2F5444; --c3: #3C3A5E; --c4: #2E4257; --c5: #4D3A31;
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -807,9 +788,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
-  // 一覧のスクロール位置。入力中にiOSが裏のページをずらすので、戻ったときに元に戻す
-  let listScroll = 0, closedAt = 0;
-  const restoreScroll = () => { window.scrollTo(0, 0); scroller.scrollTop = listScroll; };
   function setSaved(state) {
     // まだ何も書いていないメモは、もどると消えるので「ほぞんずみ」とは出さない
     if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
@@ -828,7 +806,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function openEditor(id, isNew, focusNow = isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
-    listScroll = isNew ? 0 : scroller.scrollTop;
     if (!saveFailed) hideToast();
     text.value = cur.text;
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
@@ -864,16 +841,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.inert = true;
     document.body.classList.remove('editing');
     render();
-    // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
-    closedAt = Date.now();
-    // iOSは、キーボードが開いたまま戻ると一番上のメモの文字を描きなおさないことがある。
-    // キーボードが閉じきったころに一覧を作りなおして、描きなおさせる
-    setTimeout(freshList, 450);
-    setTimeout(freshList, 1000);
-    restoreScroll();
-    requestAnimationFrame(restoreScroll);
-    setTimeout(restoreScroll, 350);
-    setTimeout(restoreScroll, 800);
   }
   text.addEventListener('input', () => {
     if (!cur) return;
@@ -883,15 +850,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
   });
-  function freshList() {
-    if (cur || g) return; // 入力中・カードを操作中は作りなおさない
-    const st = scroller.scrollTop;
-    render();
-    scroller.scrollTop = st;
-  }
-  let freshTimer = null;
-  // もどるボタン：左ふちスワイプと同じく、先にキーボードを閉じてから一覧へ
-  $('back').addEventListener('click', () => { text.blur(); closeEditor(); });
+  $('back').addEventListener('click', closeEditor);
   saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
   function newMemo(focusNow) {
     const color = memos.length ? (memos[0].color + 1) % COLORS : 0;
@@ -901,6 +860,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     openEditor(m.id, true, focusNow);
     persist();
     render();
+    scroller.scrollTop = 0; // 戻ったとき、新しいメモ（いちばん上）が見えるように
   }
   // iPhone：指が＋にふれた瞬間（touchstart）に入力画面を開き、指をはなした瞬間（touchend）にカーソルを置く。
   // カーソルを置くときには入力画面がもう表示されているので、iOSがキーボードを出してくれる。
@@ -956,15 +916,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   if (window.visualViewport) {
     const vv = window.visualViewport;
     const fit = () => {
-      // 一覧にもどったあと、キーボードが閉じる動きでずれたら元にもどす
-      if (!cur) {
-        window.scrollTo(0, 0);
-        if (Date.now() - closedAt < 1500) {
-          scroller.scrollTop = listScroll;
-          clearTimeout(freshTimer);
-          freshTimer = setTimeout(freshList, 120); // キーボードの動きが止まったら描きなおす
-        }
-      }
       // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
       // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）
       editor.style.top = vv.offsetTop + 'px';
@@ -1086,23 +1037,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     if (!pending) return;
     applyRestore(pending.slice(), 'バックアップの ' + pending.length + 'こ に入れかえました');
   });
-
-  /* ---------- 時計や電池の帯（ステータスバー）の色 ---------- */
-  // ホーム画面のアプリでは、iPhoneは帯の色を開いたときに一度決めるだけのことがある。
-  // ライト／ダークが切り替わったら、帯の色（theme-color）を書きかえて伝え直す
-  const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
-  function syncThemeColor() {
-    const color = darkMq.matches ? '#1E2A25' : '#EDF8F1';
-    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-      m.removeAttribute('media'); // どちらのモードでも同じ1色にする
-      m.setAttribute('content', color);
-    });
-  }
-  syncThemeColor();
-  if (darkMq.addEventListener) darkMq.addEventListener('change', syncThemeColor);
-  else if (darkMq.addListener) darkMq.addListener(syncThemeColor); // 古いiOS向け
-  // アプリに戻ってきたときにも合わせ直す（裏にいる間に切り替わった場合）
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncThemeColor(); });
 
   render();
 
