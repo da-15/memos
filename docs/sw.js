@@ -1,5 +1,5 @@
 // もちメモ service worker: オフラインでも開けるようにアプリ本体をキャッシュする
-const CACHE = 'mochimemo-v23';
+const CACHE = 'mochimemo-v24';
 const SHELL = [
   './',
   './index.html',
@@ -10,7 +10,12 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // ブラウザに残っている古いファイルではなく、必ずGitHubから最新を取ってくる（cache: 'reload'）
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {
@@ -40,10 +45,12 @@ self.addEventListener('fetch', (e) => {
 
   if (url.origin !== location.origin) return;
 
-  // ページ本体: ネット優先（更新をすぐ反映）、オフライン時はキャッシュ
+  // ページ本体: ネット優先（更新をすぐ反映）、オフライン時はキャッシュ。
+  // GitHub Pagesは「10分間は使い回してよい」と返すので、cache: 'no-cache' で毎回GitHubに確認する
+  // （変わっていなければ中身は送られてこないので、通信はほとんど増えない）
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req)
+      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
         .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); return res; })
         .catch(() => caches.match('./index.html'))
     );
