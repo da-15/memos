@@ -660,7 +660,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   let listScroll = 0, closedAt = 0;
   const restoreScroll = () => { window.scrollTo(0, 0); scroller.scrollTop = listScroll; };
   function setSaved(state) {
-    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
+    // まだ何も書いていないメモは、もどると消えるので「ほぞんずみ」とは出さない
+    if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
+    saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : state === 'empty' ? 'からっぽ' : 'ほぞんちゅう…';
     saved.classList.toggle('ok', state === 'ok');
     saved.classList.toggle('err', state === 'error');
   }
