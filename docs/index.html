@@ -820,6 +820,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     editor.setAttribute('aria-hidden', 'false');
     editor.inert = false;
     document.body.classList.add('editing');
+    history.pushState({ editor: true }, ''); // 「1ページ進んだ」ことにする（戻る操作で一覧に戻れるように）
     if (isNew && focusNow) {
       void editor.offsetHeight;
       text.focus();
@@ -850,7 +851,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
   });
-  $('back').addEventListener('click', closeEditor);
+  // 閉じる操作は、どれもブラウザの「戻る」を通す（もどるボタン・左ふちのスワイプ・Androidの戻る・パソコンの戻るボタンを同じ道筋にそろえる）
+  function requestClose() {
+    if (history.state && history.state.editor) history.back();
+    else closeEditor();
+  }
+  window.addEventListener('popstate', () => { if (cur) closeEditor(); });
+  if (history.state && history.state.editor) history.replaceState(null, ''); // 書く画面のまま読みこみ直したとき
+  $('back').addEventListener('click', requestClose);
   saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
   function newMemo(focusNow) {
     const color = memos.length ? (memos[0].color + 1) % COLORS : 0;
@@ -906,7 +914,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const s = eg; eg = null;
     if (!s.on) return;
     editor.classList.remove('dragging');
-    if (s.dx > window.innerWidth * 0.3) closeEditor();
+    if (s.dx > window.innerWidth * 0.3) requestClose();
     else editor.style.transform = '';
   };
   editor.addEventListener('touchend', egEnd);
