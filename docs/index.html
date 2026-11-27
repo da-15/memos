@@ -250,15 +250,16 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .ed-date { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 /* 保存の印：ふだんは小さな丸い印だけ（言葉は読み上げ用に残し、画面には出さない）。保存できないときだけ文字で出す */
 .saved {
-  flex: none; display: grid; place-items: center;
+  flex: none; position: relative;
   width: 30px; height: 30px; border-radius: 50%;
-  background: var(--surface); font-size: 0; color: transparent;
+  background: transparent; font-size: 0; color: transparent; /* 白い丸はなし。印だけ */
 }
-.saved::before { content: ""; }
-.saved.empty::before { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--line); }
-.saved.saving::before { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: savepulse 1s ease-in-out infinite; }
-.saved.ok::before { width: 13px; height: 7px; border: solid var(--accent); border-width: 0 0 3px 3px; border-radius: 1px; transform: translateY(-2px) rotate(-45deg); }
-@keyframes savepulse { 50% { transform: scale(.55); opacity: .5; } }
+/* 印は丸のまん中に置く（読み上げ用の言葉が場所をとって、印が上にずれないように） */
+.saved::before { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.saved.st-empty::before { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--ink-soft); opacity: .45; }
+.saved.st-saving::before { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: savepulse 1s ease-in-out infinite; }
+.saved.st-ok::before { width: 13px; height: 7px; border: solid var(--accent); border-width: 0 0 3px 3px; border-radius: 1px; transform: translate(-50%, -50%) translate(var(--chk-x, 0px), var(--chk-y, -2px)) rotate(-45deg); }
+@keyframes savepulse { 50% { scale: .55; opacity: .5; } }
 /* 文字の大きさボタンとスライドバー */
 .size-btn {
   flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
@@ -325,11 +326,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   border: solid var(--accent); border-width: 0 3px 3px 0; border-radius: 1px;
   transform: translate(-50%, -50%) rotate(45deg);
 }
-.saved.err {
+.saved.st-err {
   width: auto; height: auto; padding: 5px 10px; border-radius: 999px; cursor: pointer;
   font-size: 12px; font-weight: 700; color: var(--danger-ink); background: var(--danger);
 }
-.saved.err::before { display: none; }
+.saved.st-err::before { display: none; }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
@@ -403,7 +404,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
         <circle cx="17.2" cy="11.2" r="1.7" fill="var(--pal-b)"/>
       </svg>
     </button>
-    <span class="saved ok" id="saved" role="status">ほぞんずみ</span>
+    <span class="saved st-ok" id="saved" role="status">ほぞんずみ</span>
   </div>
   <div class="size-panel" id="size-panel" hidden>
     <span class="sp-a sp-small" aria-hidden="true">あ</span>
@@ -743,10 +744,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
     // 言葉は読み上げ用。画面には、保存できないとき以外は印だけが出る
     saved.textContent = state === 'ok' ? 'ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : state === 'empty' ? 'からっぽ' : 'ほぞんちゅう';
-    saved.classList.toggle('ok', state === 'ok');
-    saved.classList.toggle('err', state === 'error');
-    saved.classList.toggle('empty', state === 'empty');
-    saved.classList.toggle('saving', state === 'saving');
+    // クラス名は st- をつける（一覧の .empty などとぶつからないように）
+    saved.classList.toggle('st-ok', state === 'ok');
+    saved.classList.toggle('st-err', state === 'error');
+    saved.classList.toggle('st-empty', state === 'empty');
+    saved.classList.toggle('st-saving', state === 'saving');
   }
   function saveNow() { setSaved(persist() ? 'ok' : 'error'); }
   function flush() {
