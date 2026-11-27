@@ -66,8 +66,12 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
-html, body { margin: 0; min-height: 100%; }
+html, body { margin: 0; height: 100%; }
+/* ページ自体は動かさず、一覧だけを専用の枠の中でスクロールさせる
+   （iOSがキーボードの開け閉めでページをずらしても、一覧がバーの裏に入りこまないように） */
 body {
+  position: fixed; inset: 0; overflow: hidden;
+  display: flex; flex-direction: column;
   font-family: var(--font);
   color: var(--ink);
   background-color: var(--bg);
@@ -79,10 +83,10 @@ body {
 }
 body.editing { overflow: hidden; }
 /* 入力中は裏の一覧を隠す（スライドが終わってから）。左ふちスワイプで戻るときだけ見せる */
-body.editing .top, body.editing .hint, body.editing main {
+body.editing .top, body.editing .hint, body.editing .scroller {
   visibility: hidden; transition: visibility 0s .34s;
 }
-body.editing.peek .top, body.editing.peek .hint, body.editing.peek main { visibility: visible; transition: none; }
+body.editing.peek .top, body.editing.peek .hint, body.editing.peek .scroller { visibility: visible; transition: none; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
 
@@ -92,12 +96,11 @@ body::before {
   z-index: 10; background: var(--bg);
 }
 .top {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  flex: none; position: relative; z-index: 5;
   display: flex; align-items: center; gap: 10px;
   padding-block: 14px 10px;
   padding-left: max(18px, env(safe-area-inset-left, 0px));
   padding-right: max(18px, env(safe-area-inset-right, 0px));
-  background: linear-gradient(var(--bg) 70%, transparent);
 }
 .top h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: .04em; }
 .count {
@@ -109,11 +112,15 @@ body::before {
 @keyframes bob { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(1.06, .94); } }
 
 .hint {
-  margin: 0; padding-block: 0 8px; font-size: 12px; color: var(--ink-soft);
+  flex: none; margin: 0; padding-block: 0 8px; font-size: 12px; color: var(--ink-soft);
   padding-left: max(20px, env(safe-area-inset-left, 0px));
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
 
+.scroller {
+  flex: 1; min-height: 0; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
 main {
   padding-block: 6px calc(120px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -219,16 +226,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 }
 .editor.open { transform: none; visibility: visible; transition: transform .34s cubic-bezier(.2, .8, .25, 1), background-color .3s; }
 .editor.dragging { transition: none; }
-/* 新しいメモは＋ボタンから「ぽんっ」と開く。最初から定位置にあるので、すぐキーボードを出せる */
-.editor.open.from-fab {
-  transition: none;
-  transform-origin: calc(100% - 55px) calc(100% - 60px);
-  animation: fabpop .34s cubic-bezier(.3, 1.3, .5, 1);
-}
-@keyframes fabpop {
-  from { transform: scale(.15); opacity: 0; border-radius: 48px; }
-  to { transform: none; opacity: 1; border-radius: 0; }
-}
+/* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
+.editor.open.from-fab { transition: none; }
+/* iOSは透明・画面外の入力欄にはキーボードを出さないので、入力欄そのものは動かさず上のバーだけはずませる */
+.editor.open.from-fab .ed-bar { animation: barpop .42s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes barpop { from { transform: translateY(-8px) scale(.96); } to { transform: none; } }
 .ed-bar {
   display: flex; align-items: center; gap: 8px;
   padding-block: calc(10px + env(safe-area-inset-top, 0px)) 8px;
@@ -314,6 +316,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 </header>
 <p class="hint" id="hint">タップでひらく・長押しで並べかえ・左にスワイプで削除</p>
 
+<div class="scroller" id="scroller">
 <main>
   <ul id="list"></ul>
   <div class="empty" id="empty" hidden>
@@ -326,6 +329,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     <p><strong>まだメモがないよ</strong><br>右下の ＋ から書いてみてね</p>
   </div>
 </main>
+</div>
 
 <button class="fab" id="fab" type="button" aria-label="新しいメモを書く"></button>
 
@@ -355,6 +359,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   const COLORS = 6;
   const GAP = 12;
   const $ = (id) => document.getElementById(id);
+  const scroller = $('scroller');
   const list = $('list'), empty = $('empty'), count = $('count');
   const editor = $('editor'), text = $('text'), saved = $('saved'), edDate = $('ed-date');
   const toast = $('toast'), toastMsg = $('toast-msg'), toastUndo = $('toast-undo');
@@ -532,8 +537,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     g.li.classList.remove('pressing');
     g.items = [...list.children];
     g.i = g.items.indexOf(g.li);
-    g.sy0 = window.scrollY;
-    g.rects = g.items.map((el) => { const r = el.getBoundingClientRect(); return { top: r.top + window.scrollY, h: r.height }; });
+    g.sy0 = scroller.scrollTop;
+    g.maxScroll = scroller.scrollHeight - scroller.clientHeight; // ドラッグ中のカードで伸びた分はスクロールしない
+    g.rects = g.items.map((el) => { const r = el.getBoundingClientRect(); return { top: r.top + scroller.scrollTop, h: r.height }; });
     g.step = g.rects[g.i].h + GAP;
     g.target = g.i;
     list.classList.add('dragging');
@@ -542,17 +548,18 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     dragMove();
     const tick = () => {
       if (!g || g.mode !== 'drag') return;
-      const edge = 90, h = window.innerHeight;
+      const edge = 90, sr = scroller.getBoundingClientRect();
       let v = 0;
-      if (g.y < edge) v = -Math.ceil((edge - g.y) / 6);
-      else if (g.y > h - edge) v = Math.ceil((g.y - (h - edge)) / 6);
-      if (v) { window.scrollBy(0, v); dragMove(); }
+      if (g.y < sr.top + edge) v = -Math.ceil((sr.top + edge - g.y) / 6);
+      else if (g.y > sr.bottom - edge) v = Math.ceil((g.y - (sr.bottom - edge)) / 6);
+      const next = Math.max(0, Math.min(g.maxScroll, scroller.scrollTop + v));
+      if (v && next !== scroller.scrollTop) { scroller.scrollTop = next; dragMove(); }
       g.raf = requestAnimationFrame(tick);
     };
     g.raf = requestAnimationFrame(tick);
   }
   function dragMove() {
-    const dy = g.y - g.y0 + (window.scrollY - g.sy0);
+    const dy = g.y - g.y0 + (scroller.scrollTop - g.sy0);
     g.li.style.transform = 'translateY(' + dy + 'px) scale(1.03) rotate(-1.2deg)';
     const r = g.rects[g.i];
     const center = r.top + r.h / 2 + dy;
@@ -639,8 +646,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   /* ---------- メモ入力画面（自動保存） ---------- */
   let cur = null, saveTimer = null;
   // 一覧のスクロール位置。入力中にiOSが裏のページをずらすので、戻ったときに元に戻す
-  let listScroll = 0;
-  const restoreScroll = () => window.scrollTo(0, listScroll);
+  let listScroll = 0, closedAt = 0;
+  const restoreScroll = () => { window.scrollTo(0, 0); scroller.scrollTop = listScroll; };
   function setSaved(state) {
     saved.textContent = state === 'ok' ? '✓ ほぞんずみ' : state === 'error' ? '⚠ ほぞんできてないよ' : 'ほぞんちゅう…';
     saved.classList.toggle('ok', state === 'ok');
@@ -653,7 +660,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function openEditor(id, isNew) {
     cur = memos.find((m) => m.id === id);
     if (!cur) return;
-    listScroll = isNew ? 0 : window.scrollY;
+    listScroll = isNew ? 0 : scroller.scrollTop;
     if (!saveFailed) hideToast();
     text.value = cur.text;
     editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
@@ -687,9 +694,11 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     document.body.classList.remove('editing');
     render();
     // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
+    closedAt = Date.now();
     restoreScroll();
     requestAnimationFrame(restoreScroll);
     setTimeout(restoreScroll, 350);
+    setTimeout(restoreScroll, 800);
   }
   text.addEventListener('input', () => {
     if (!cur) return;
@@ -749,6 +758,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   if (window.visualViewport) {
     const vv = window.visualViewport;
     const fit = () => {
+      // 一覧にもどったあと、キーボードが閉じる動きでずれたら元にもどす
+      if (!cur) { window.scrollTo(0, 0); if (Date.now() - closedAt < 1500) scroller.scrollTop = listScroll; }
       // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
       // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）
       editor.style.top = vv.offsetTop + 'px';
