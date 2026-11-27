@@ -2,7 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- maximum-scale=1：16pxより小さい入力欄をタップしたとき、iPhoneが画面を勝手に拡大しないように（指での拡大はiPhoneではそのままできる） -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>もちメモ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#EDF8F1" media="(prefers-color-scheme: light)">
@@ -280,7 +281,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   animation: drop .28s cubic-bezier(.3, 1.4, .5, 1);
 }
 .sp-a { font-weight: 700; color: var(--ink-soft); line-height: 1; }
-.sp-small { font-size: 13px; }
+.sp-small { font-size: 11px; }
 .sp-big { font-size: 24px; }
 .sp-val { min-width: 2ch; font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; text-align: right; }
 #size-range { -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; height: 32px; margin: 0; background: transparent; }
@@ -408,7 +409,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   </div>
   <div class="size-panel" id="size-panel" hidden>
     <span class="sp-a sp-small" aria-hidden="true">あ</span>
-    <input type="range" id="size-range" min="16" max="26" step="1" value="17" aria-label="文字の大きさ">
+    <input type="range" id="size-range" min="12" max="26" step="1" value="17" aria-label="文字の大きさ">
     <span class="sp-a sp-big" aria-hidden="true">あ</span>
     <span class="sp-val" id="sp-val" aria-hidden="true">17</span>
   </div>
@@ -713,7 +714,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   /* ---------- 文字の大きさ（スライドバー・書く画面だけ。アプリが覚えておく） ---------- */
   const SIZE_KEY = 'mochimemo.fontsize';
   const sizeBtn = $('size-btn'), sizePanel = $('size-panel'), sizeRange = $('size-range'), spVal = $('sp-val');
-  const SIZE_MIN = 16, SIZE_MAX = 26; // 16pxより小さいと、iPhoneが入力時に画面を勝手に拡大する
+  const SIZE_MIN = 12, SIZE_MAX = 26; // 16px未満でも勝手に拡大しないよう、viewport に maximum-scale=1 を指定している
   let fontSize = 17;
   try { const v = parseInt(localStorage.getItem(SIZE_KEY), 10); if (v >= SIZE_MIN && v <= SIZE_MAX) fontSize = v; } catch (e) {}
   function applySize(v) {
