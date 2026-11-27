@@ -39,6 +39,9 @@
   --c1: #FFF1C9; /* レモン */
   --c2: #C8EEDB; /* ミント */
   --rim: #FFFFFF;
+  --pal-y: #F2BE3C;
+  --pal-g: #4FBF8C;
+  --pal-b: #5EA2E6;
   --c3: #E7E4FF; /* ラベンダー */
   --c4: #DCEFFF; /* ソーダ */
   --c5: #FFE6D3; /* ピーチ */
@@ -252,13 +255,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 }
 .saved.ok { color: var(--accent); }
 .color-btn {
-  flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; cursor: pointer;
-  border: 3px solid var(--surface);
-  background: conic-gradient(var(--c0) 0 60deg, var(--c1) 0 120deg, var(--c2) 0 180deg, var(--c3) 0 240deg, var(--c4) 0 300deg, var(--c5) 0);
+  flex: none; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center;
+  background: var(--surface); color: var(--ink);
   box-shadow: 0 2px 0 var(--shadow);
   transition: transform .25s cubic-bezier(.3, 1.6, .5, 1);
 }
-.color-btn[aria-expanded="true"] { transform: rotate(60deg) scale(1.08); }
+.color-btn svg { width: 24px; height: 24px; }
+.color-btn[aria-expanded="true"] { transform: rotate(-14deg) scale(1.08); }
 .color-btn:active { transform: scale(.9); }
 .palette {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
@@ -345,7 +349,15 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       もどる
     </button>
     <span class="ed-date" id="ed-date"></span>
-    <button class="color-btn" id="color-btn" type="button" aria-label="メモの色をえらぶ" aria-expanded="false" aria-controls="palette"></button>
+    <button class="color-btn" id="color-btn" type="button" aria-label="メモの色をえらぶ" aria-expanded="false" aria-controls="palette">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.8-.8 1.8-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H16a5 5 0 0 0 5-5C21 6.6 17 3 12 3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="7.4" cy="11.6" r="1.7" fill="var(--accent)"/>
+        <circle cx="9.6" cy="7.4" r="1.7" fill="var(--pal-y)"/>
+        <circle cx="14.6" cy="7.4" r="1.7" fill="var(--pal-g)"/>
+        <circle cx="17.2" cy="11.2" r="1.7" fill="var(--pal-b)"/>
+      </svg>
+    </button>
     <span class="saved ok" id="saved" role="status">✓ ほぞんずみ</span>
   </div>
   <div class="palette" id="palette" role="radiogroup" aria-label="メモの色" hidden></div>
@@ -695,6 +707,10 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     render();
     // キーボードが閉じきるまでiOSがずらし続けることがあるので、何回か戻す
     closedAt = Date.now();
+    // iOSは、キーボードが開いたまま戻ると一番上のメモの文字を描きなおさないことがある。
+    // キーボードが閉じきったころに一覧を作りなおして、描きなおさせる
+    setTimeout(freshList, 450);
+    setTimeout(freshList, 1000);
     restoreScroll();
     requestAnimationFrame(restoreScroll);
     setTimeout(restoreScroll, 350);
@@ -708,17 +724,33 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
   });
-  $('back').addEventListener('click', closeEditor);
+  function freshList() {
+    if (cur || g) return; // 入力中・カードを操作中は作りなおさない
+    const st = scroller.scrollTop;
+    render();
+    scroller.scrollTop = st;
+  }
+  let freshTimer = null;
+  // もどるボタン：左ふちスワイプと同じく、先にキーボードを閉じてから一覧へ
+  $('back').addEventListener('click', () => { text.blur(); closeEditor(); });
   saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
-  $('fab').addEventListener('click', () => {
+  function newMemo() {
     const color = memos.length ? (memos[0].color + 1) % COLORS : 0;
     const now = Date.now();
     const m = { id: uid(), color, created: now, updated: now, text: '' };
     memos.unshift(m);
+    openEditor(m.id, true); // カーソルを置くのを最優先（iOSでキーボードを出すため）
     persist();
     render();
-    openEditor(m.id, true);
+  }
+  // iOSは「指をはなした瞬間（touchend）」に置いたカーソルでいちばん確実にキーボードを出すので、そこで開く。
+  // そのあとに来るclickは打ち消す。マウスではclickで開く
+  const fab = $('fab');
+  fab.addEventListener('touchend', (e) => {
+    if (e.cancelable) e.preventDefault();
+    if (!cur) newMemo();
   });
+  fab.addEventListener('click', () => { if (!cur) newMemo(); });
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
 
@@ -759,7 +791,14 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const vv = window.visualViewport;
     const fit = () => {
       // 一覧にもどったあと、キーボードが閉じる動きでずれたら元にもどす
-      if (!cur) { window.scrollTo(0, 0); if (Date.now() - closedAt < 1500) scroller.scrollTop = listScroll; }
+      if (!cur) {
+        window.scrollTo(0, 0);
+        if (Date.now() - closedAt < 1500) {
+          scroller.scrollTop = listScroll;
+          clearTimeout(freshTimer);
+          freshTimer = setTimeout(freshList, 120); // キーボードの動きが止まったら描きなおす
+        }
+      }
       // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
       // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）
       editor.style.top = vv.offsetTop + 'px';
