@@ -159,8 +159,7 @@ main {
   right: calc(22px + env(safe-area-inset-right, 0px));
   bottom: calc(26px + env(safe-area-inset-bottom, 0px));
   width: 66px; height: 66px; border: 0; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--accent-2), var(--accent) 70%);
-  box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 60%, #8a2c4c), 0 14px 26px -8px var(--shadow);
+  background: var(--accent); /* 影もグラデーションもなし。ピンクの丸だけ */
   cursor: pointer; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1);
 }
 .fab::before, .fab::after {
@@ -169,7 +168,7 @@ main {
   transform: translate(-50%, -50%);
 }
 .fab::after { transform: translate(-50%, -50%) rotate(90deg); }
-.fab:active { transform: scale(.88) translateY(3px); }
+.fab:active { transform: scale(.88); }
 body.editing .fab { transform: scale(0); }
 
 /* ===== Toast ===== */
@@ -925,9 +924,15 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const vv = window.visualViewport;
     const fit = () => {
       // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
-      // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）
+      // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）。
+      // window.innerHeight はiPhoneのアプリではキーボードと一緒に縮むことがあるので使わず、
+      // 入力画面の下はしと、見えている範囲の下はしを実際に測って、その差だけあける
       editor.style.top = vv.offsetTop + 'px';
-      editor.style.paddingBottom = Math.max(0, window.innerHeight - vv.height) + 'px';
+      editor.style.paddingBottom = '0px';
+      const hidden = editor.getBoundingClientRect().bottom - (vv.offsetTop + vv.height);
+      editor.style.paddingBottom = Math.max(0, hidden) + 'px';
+      // 書く範囲が縮んだら、カーソルが見えるところまで本文をスクロールする
+      if (document.activeElement === text) text.setSelectionRange(text.selectionStart, text.selectionEnd);
     };
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
