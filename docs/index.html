@@ -49,12 +49,10 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; }
-/* ページ自体は動かさず、一覧だけを専用の枠の中でスクロールさせる
-   （iOSがキーボードの開け閉めでページをずらしても、一覧がバーの裏に入りこまないように） */
+/* 1画面の作り：一覧とメモの画面を重ねずに切りかえる。どちらも、ふつうのページとしてページ全体でスクロールする。
+   スクロールする場所が1つだけなので、キーボードが出たときの動きを iPhone にそのまままかせられる */
+html, body { margin: 0; }
 body {
-  position: fixed; inset: 0; overflow: hidden;
-  display: flex; flex-direction: column;
   font-family: var(--font);
   color: var(--ink);
   background-color: var(--bg);
@@ -68,12 +66,7 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
 
 /* ===== Top ===== */
-body::before {
-  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
-  z-index: 10; background: var(--bg);
-}
 .top {
-  flex: none; position: relative; z-index: 5;
   display: flex; align-items: center; gap: 10px;
   padding-block: 14px 10px;
   padding-left: max(18px, env(safe-area-inset-left, 0px));
@@ -89,15 +82,11 @@ body::before {
 @keyframes bob { 0%,100% { transform: scale(1, 1); } 50% { transform: scale(1.06, .94); } }
 
 .hint {
-  flex: none; margin: 0; padding-block: 0 8px; font-size: 12px; color: var(--ink-soft);
+  margin: 0; padding-block: 0 8px; font-size: 12px; color: var(--ink-soft);
   padding-left: max(20px, env(safe-area-inset-left, 0px));
   padding-right: max(20px, env(safe-area-inset-right, 0px));
 }
 
-.scroller {
-  flex: 1; min-height: 0; overflow-y: auto;
-  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-}
 main {
   padding-block: 6px calc(120px + env(safe-area-inset-bottom, 0px));
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -193,28 +182,16 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 
 /* ===== Editor ===== */
 .editor {
-  position: fixed; left: 0; top: 0; width: 100%; height: 100%; z-index: 20;
   display: flex; flex-direction: column;
+  min-height: 100vh; min-height: 100dvh;
   background: var(--paper, var(--c0));
-  /* 閉じているときは画面の右外に置くだけ（隠す→表示の切り替えをすると、iOSが文字を描き忘れたり
-     キーボードを出さなかったりするため）。操作できないようにするのは inert で行う */
-  transform: translateX(calc(100% + 48px)); /* 左の影も見えないところまで */
-  transition: transform .34s cubic-bezier(.2, .8, .25, 1), background-color .3s;
-  box-shadow: -10px 0 30px -12px var(--shadow);
 }
-.editor.open { transform: none; }
-.editor.dragging { transition: none; }
-/* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
-.editor.open.from-fab { transition: none; }
 .ed-bar {
   display: flex; align-items: center; gap: 8px;
   padding-block: calc(10px + env(safe-area-inset-top, 0px)) 8px;
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-/* 書いている間（本文にカーソルがある間）は上のバーを出さない。キーボードを閉じると出る。
-   iPhoneはキーボードが出るとページを押し上げるので、バーが半分隠れたり、スクロールで出せなくなったりするため */
-.editor:has(#text:focus) .ed-bar { display: none; }
 .back {
   display: inline-flex; align-items: center; gap: 2px;
   border: 0; border-radius: 999px; padding: 8px 16px 8px 10px; cursor: pointer;
@@ -309,16 +286,16 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 }
 #text {
   --lh: 32px;
-  flex: 1; width: 100%; border: 0; outline: none; resize: none;
-  overscroll-behavior: contain; /* 本文の端までスクロールしても、ページ全体に動きを渡さない（渡すとしばらく本文がスクロールできなくなる） */
+  flex: 1 0 auto; width: 100%; border: 0; outline: none; resize: none;
+  overflow: hidden; /* 本文の中ではスクロールしない。高さは文字の量に合わせて伸ばし、ページ全体でスクロールする */
   padding-top: 6px;
   padding-left: max(22px, env(safe-area-inset-left, 0px));
   padding-right: max(22px, env(safe-area-inset-right, 0px));
-  padding-bottom: 70vh; /* 最後の行の下にも余白をとる（下のほうの行を書くとき、iPhoneが本文をキーボードの上までスクロールできるように） */
+  padding-bottom: 70vh; /* 最後の行の下にも余白をとる（下のほうの行を書くとき、iPhoneがページをキーボードの上までスクロールできるように） */
   font-family: var(--font); font-size: 17px; font-weight: 500; line-height: var(--lh); color: var(--ink);
   background-color: transparent;
   background-image: linear-gradient(transparent calc(var(--lh) - 1.5px), var(--line) calc(var(--lh) - 1.5px));
-  background-size: 100% var(--lh); background-position: 0 6px; background-attachment: local;
+  background-size: 100% var(--lh); background-position: 0 6px;
   -webkit-user-select: text; user-select: text;
 }
 #text::placeholder { color: var(--ink-soft); opacity: .8; }
@@ -374,6 +351,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 </head>
 <body>
 
+<div id="list-view">
 <header class="top">
   <svg class="mochi" viewBox="0 0 64 52" aria-hidden="true">
     <path d="M5 37C5 22 17 8 32 8s27 14 27 29c0 7-7 10-27 10S5 44 5 37z" fill="var(--mochi)" stroke="var(--mochi-line)" stroke-width="2.5"/>
@@ -389,7 +367,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 </header>
 <p class="hint" id="hint">タップでひらく・長押しで並べかえ・左にスワイプで削除</p>
 
-<div class="scroller" id="scroller">
 <main>
   <ul id="list"></ul>
   <div class="empty" id="empty" hidden>
@@ -435,7 +412,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   <button type="button" id="toast-undo">もどす</button>
 </div>
 
-<section class="editor" id="editor" aria-hidden="true" aria-label="メモを編集" inert>
+<section class="editor" id="editor" aria-label="メモを編集" hidden>
   <div class="ed-bar">
     <button class="back" id="back" type="button" aria-label="一覧にもどる">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -471,7 +448,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   const COLORS = 6;
   const GAP = 12;
   const $ = (id) => document.getElementById(id);
-  const scroller = $('scroller');
+  const listView = $('list-view');
   const list = $('list'), empty = $('empty'), count = $('count');
   const editor = $('editor'), text = $('text'), saved = $('saved'), edDate = $('ed-date');
   const toast = $('toast'), toastMsg = $('toast-msg'), toastUndo = $('toast-undo');
@@ -655,9 +632,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     g.li.classList.remove('pressing');
     g.items = [...list.children];
     g.i = g.items.indexOf(g.li);
-    g.sy0 = scroller.scrollTop;
-    g.maxScroll = scroller.scrollHeight - scroller.clientHeight; // ドラッグ中のカードで伸びた分はスクロールしない
-    g.rects = g.items.map((el) => { const r = el.getBoundingClientRect(); return { top: r.top + scroller.scrollTop, h: r.height }; });
+    g.sy0 = window.scrollY;
+    g.maxScroll = document.documentElement.scrollHeight - window.innerHeight; // ドラッグ中のカードで伸びた分はスクロールしない
+    g.rects = g.items.map((el) => { const r = el.getBoundingClientRect(); return { top: r.top + window.scrollY, h: r.height }; });
     g.step = g.rects[g.i].h + GAP;
     g.target = g.i;
     list.classList.add('dragging');
@@ -666,18 +643,18 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     dragMove();
     const tick = () => {
       if (!g || g.mode !== 'drag') return;
-      const edge = 90, sr = scroller.getBoundingClientRect();
+      const edge = 90, h = window.innerHeight;
       let v = 0;
-      if (g.y < sr.top + edge) v = -Math.ceil((sr.top + edge - g.y) / 6);
-      else if (g.y > sr.bottom - edge) v = Math.ceil((g.y - (sr.bottom - edge)) / 6);
-      const next = Math.max(0, Math.min(g.maxScroll, scroller.scrollTop + v));
-      if (v && next !== scroller.scrollTop) { scroller.scrollTop = next; dragMove(); }
+      if (g.y < edge) v = -Math.ceil((edge - g.y) / 6);
+      else if (g.y > h - edge) v = Math.ceil((g.y - (h - edge)) / 6);
+      const next = Math.max(0, Math.min(g.maxScroll, window.scrollY + v));
+      if (v && next !== window.scrollY) { window.scrollTo(0, next); dragMove(); }
       g.raf = requestAnimationFrame(tick);
     };
     g.raf = requestAnimationFrame(tick);
   }
   function dragMove() {
-    const dy = g.y - g.y0 + (scroller.scrollTop - g.sy0);
+    const dy = g.y - g.y0 + (window.scrollY - g.sy0);
     g.li.style.transform = 'translateY(' + dy + 'px) scale(1.03) rotate(-1.2deg)';
     const r = g.rects[g.i];
     const center = r.top + r.h / 2 + dy;
@@ -775,6 +752,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     sizeRange.value = String(v);
     sizeRange.style.setProperty('--fill', ((v - SIZE_MIN) / (SIZE_MAX - SIZE_MIN) * 100) + '%');
     spVal.textContent = String(v);
+    fitText();
   }
   function toggleSize(show) {
     if (show) togglePalette(false);
@@ -787,7 +765,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   applySize(fontSize);
 
   /* ---------- メモ入力画面（自動保存） ---------- */
-  let cur = null, saveTimer = null;
+  let cur = null, saveTimer = null, listScroll = 0;
   function setSaved(state) {
     // まだ何も書いていないメモは、もどると消えるので「ほぞんずみ」とは出さない
     if (state === 'ok' && cur && cur.text.trim() === '') state = 'empty';
@@ -814,18 +792,15 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     toggleSize(false);
     edDate.textContent = isNew ? 'あたらしいメモ' : fmt(cur.updated);
     setSaved(saveFailed ? 'error' : 'ok');
-    editor.style.transform = '';
-    editor.classList.toggle('from-fab', isNew);
-    editor.classList.add('open');
-    editor.setAttribute('aria-hidden', 'false');
-    editor.inert = false;
+    listScroll = window.scrollY; // 一覧のどこを見ていたか（戻ったときに戻す）
+    listView.hidden = true;
+    editor.hidden = false;
     document.body.classList.add('editing');
+    fitText();
+    window.scrollTo(0, 0);
     history.pushState({ editor: true }, ''); // 「1ページ進んだ」ことにする（戻る操作で一覧に戻れるように）
-    if (isNew && focusNow) {
-      void editor.offsetHeight;
-      text.focus();
-    }
-    else { text.scrollTop = 0; text.setSelectionRange(0, 0); }
+    if (isNew && focusNow) text.focus();
+    else text.setSelectionRange(0, 0);
   }
   function closeEditor() {
     if (!cur) return;
@@ -836,28 +811,34 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       memos = memos.filter((m) => m.id !== c.id);
       persist();
     }
-    editor.style.transform = '';
-    editor.classList.remove('open', 'from-fab');
-    editor.setAttribute('aria-hidden', 'true');
-    editor.inert = true;
+    editor.hidden = true;
+    listView.hidden = false;
     document.body.classList.remove('editing');
     render();
+    window.scrollTo(0, listScroll);
+  }
+  // 本文の高さを文字の量に合わせる（本文の中ではスクロールせず、ページ全体でスクロールするため）
+  function fitText() {
+    text.style.height = '0px';
+    text.style.height = text.scrollHeight + 'px';
   }
   text.addEventListener('input', () => {
     if (!cur) return;
     cur.text = text.value;
     cur.updated = Date.now();
+    fitText();
     setSaved('saving');
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => { saveTimer = null; saveNow(); }, 500);
   });
-  // 閉じる操作は、どれもブラウザの「戻る」を通す（もどるボタン・左ふちのスワイプ・Androidの戻る・パソコンの戻るボタンを同じ道筋にそろえる）
+  // 閉じる操作は、どれもブラウザの「戻る」を通す（もどるボタン・iPhoneの左ふちスワイプ・Androidの戻る・パソコンの戻るボタンを同じ道筋にそろえる）
   function requestClose() {
     if (history.state && history.state.editor) history.back();
     else closeEditor();
   }
   window.addEventListener('popstate', () => { if (cur) closeEditor(); });
   if (history.state && history.state.editor) history.replaceState(null, ''); // 書く画面のまま読みこみ直したとき
+  history.scrollRestoration = 'manual'; // 戻ったときのスクロール位置はアプリが戻す（ブラウザが別の位置に戻して上書きしないように）
   $('back').addEventListener('click', requestClose);
   saved.addEventListener('click', () => { if (saveFailed) saveNow(); });
   function newMemo(focusNow) {
@@ -866,9 +847,9 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const m = { id: uid(), color, created: now, updated: now, text: '' };
     memos.unshift(m);
     openEditor(m.id, true, focusNow);
+    listScroll = 0; // 戻ったとき、新しいメモ（いちばん上）が見えるように
     persist();
     render();
-    scroller.scrollTop = 0; // 戻ったとき、新しいメモ（いちばん上）が見えるように
   }
   // iPhone：指が＋にふれた瞬間（touchstart）に入力画面を開き、指をはなした瞬間（touchend）にカーソルを置く。
   // カーソルを置くときには入力画面がもう表示されているので、iOSがキーボードを出してくれる。
@@ -888,37 +869,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   fab.addEventListener('click', () => { if (!cur) newMemo(true); });
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
-
-  // 画面の左ふちから右へスワイプしてもどる
-  let eg = null;
-  editor.addEventListener('touchstart', (e) => {
-    const t = e.touches[0];
-    if (e.touches.length === 1 && t.clientX < 30) eg = { x0: t.clientX, y0: t.clientY, on: false };
-  }, { passive: true });
-  editor.addEventListener('touchmove', (e) => {
-    if (!eg) return;
-    const t = e.touches[0];
-    const dx = t.clientX - eg.x0, dy = t.clientY - eg.y0;
-    if (!eg.on) {
-      if (dx > 10 && dx > Math.abs(dy)) { eg.on = true; editor.classList.add('dragging'); text.blur(); }
-      else if (Math.abs(dy) > 10) { eg = null; return; }
-    }
-    if (eg.on) {
-      if (e.cancelable) e.preventDefault();
-      eg.dx = Math.max(0, dx);
-      editor.style.transform = 'translateX(' + eg.dx + 'px)';
-    }
-  }, { passive: false });
-  const egEnd = () => {
-    if (!eg) return;
-    const s = eg; eg = null;
-    if (!s.on) return;
-    editor.classList.remove('dragging');
-    if (s.dx > window.innerWidth * 0.3) requestClose();
-    else editor.style.transform = '';
-  };
-  editor.addEventListener('touchend', egEnd);
-  editor.addEventListener('touchcancel', egEnd);
 
   /* ---------- バックアップ（ファイルに書き出す・読み込む） ---------- */
   const LAST_KEY = 'mochimemo.lastBackup';

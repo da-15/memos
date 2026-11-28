@@ -1,5 +1,5 @@
 // もちメモ service worker: オフラインでも開けるようにアプリ本体をキャッシュする
-const CACHE = 'mochimemo-v47';
+const CACHE = 'mochimemo-v48';
 const SHELL = [
   './',
   './index.html',
