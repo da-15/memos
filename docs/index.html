@@ -310,6 +310,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
+  overscroll-behavior: contain; /* 本文の端までスクロールしても、ページ全体に動きを渡さない（渡すとしばらく本文がスクロールできなくなる） */
   padding-top: 6px;
   padding-left: max(22px, env(safe-area-inset-left, 0px));
   padding-right: max(22px, env(safe-area-inset-right, 0px));
