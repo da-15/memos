@@ -203,6 +203,12 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   box-shadow: -10px 0 30px -12px var(--shadow);
 }
 .editor.open { transform: none; }
+/* 紙の色を入力画面の下にもしばらく伸ばしておく（見た目だけ）。カーソルが下のほうにあると iPhone が画面を大きくずらし、
+   キーボードの上のバーのあたりで入力画面が切れて、後ろの白っぽい背景が見えてしまうため */
+.editor::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 100vh;
+  background: var(--paper, var(--c0)); pointer-events: none;
+}
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
@@ -952,37 +958,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     }
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
-
-    // ===== 一時的な調査用（キーボードの不具合の原因が分かったら消す） =====
-    // 書く画面の上の日付を3回タップすると、キーボードまわりの数値を画面の上に出す
-    let dbgBox = null, dbgTaps = [], fits = 0;
-    const show = () => {
-      if (!dbgBox) return;
-      dbgBox.style.top = (vv.offsetTop + 56) + 'px'; // 画面がずれても見えるところに出す
-      const e = editor.getBoundingClientRect(), t = text.getBoundingClientRect();
-      dbgBox.textContent = [
-        'innerH ' + window.innerHeight + ' / clientH ' + document.documentElement.clientHeight,
-        'vv.h ' + Math.round(vv.height) + ' / vv.top ' + Math.round(vv.offsetTop) + ' / fit回数 ' + fits,
-        'editor ' + Math.round(e.top) + '〜' + Math.round(e.bottom) + ' / 下あけ ' + editor.style.paddingBottom,
-        'text ' + Math.round(t.top) + '〜' + Math.round(t.bottom) + ' / scroll ' + Math.round(text.scrollTop) + ' / ' + text.scrollHeight + ' / ' + text.clientHeight,
-        'window.scrollY ' + Math.round(window.scrollY) + ' / screen ' + screen.height,
-      ].join('\n');
-    };
-    vv.addEventListener('resize', () => { fits++; show(); });
-    vv.addEventListener('scroll', () => { fits++; show(); });
-    text.addEventListener('input', show);
-    text.addEventListener('focus', () => setTimeout(show, 600));
-    edDate.addEventListener('click', () => {
-      const now = Date.now();
-      dbgTaps = dbgTaps.filter((x) => now - x < 1000).concat(now);
-      if (dbgTaps.length < 3) return;
-      dbgTaps = [];
-      if (dbgBox) { dbgBox.remove(); dbgBox = null; return; }
-      dbgBox = document.createElement('pre');
-      dbgBox.style.cssText = 'position:fixed;z-index:99;left:8px;right:8px;margin:0;padding:8px 10px;border-radius:12px;background:rgba(40,25,35,.85);color:#fff;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap;pointer-events:none';
-      document.body.appendChild(dbgBox);
-      show();
-    });
   }
 
 
