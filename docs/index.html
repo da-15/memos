@@ -315,7 +315,7 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
   padding-top: 6px;
   padding-left: max(22px, env(safe-area-inset-left, 0px));
   padding-right: max(22px, env(safe-area-inset-right, 0px));
-  padding-bottom: 70vh; /* 最後の行も画面の上から1/3まで上げられるように */
+  padding-bottom: 70vh; /* 最後の行の下にも余白をとる（下のほうの行を書くとき、iPhoneが本文をキーボードの上までスクロールできるように） */
   font-family: var(--font); font-size: 17px; font-weight: 500; line-height: var(--lh); color: var(--ink);
   background-color: transparent;
   background-image: linear-gradient(transparent calc(var(--lh) - 1.5px), var(--line) calc(var(--lh) - 1.5px));
@@ -920,30 +920,6 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
   };
   editor.addEventListener('touchend', egEnd);
   editor.addEventListener('touchcancel', egEnd);
-
-  // 読むだけの状態から本文を初めてタップしたときだけ、キーボードが出そろうのを少し待ってから、
-  // カーソルの行が画面の上から1/3の高さに来るように、ゆっくりスクロールする（動いたことが分かるように）。
-  // 1/3ならキーボードより上なので隠れない。そのあと書いている間のスクロールはiPhoneにまかせる。
-  // 下のほうの行をタップすると、iPhoneが先に画面全体をずらすので、それも一緒にゆっくり元に戻す
-  function caretToThird() {
-    if (document.activeElement !== text) return;
-    // カーソルより前の文字を、本文と同じ書式の見えない箱に書き写して、カーソルの行の位置を測る
-    const cs = getComputedStyle(text);
-    const m = document.createElement('div');
-    m.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box';
-    for (const k of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingLeft', 'paddingRight', 'paddingTop']) m.style[k] = cs[k];
-    m.style.width = text.clientWidth + 'px';
-    m.textContent = text.value.slice(0, text.selectionEnd);
-    const mark = m.appendChild(document.createElement('span'));
-    mark.textContent = '\u200b';
-    document.body.appendChild(m);
-    const lineTop = mark.offsetTop;
-    m.remove();
-    const third = document.documentElement.clientHeight / 3 - text.offsetTop; // 画面がずれていないときの位置で計算する
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    text.scrollTo({ top: Math.max(0, lineTop - third), behavior: 'smooth' });
-  }
-  text.addEventListener('focus', () => setTimeout(caretToThird, 400));
 
   /* ---------- バックアップ（ファイルに書き出す・読み込む） ---------- */
   const LAST_KEY = 'mochimemo.lastBackup';
