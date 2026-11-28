@@ -206,15 +206,15 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
-/* iOSは透明・画面外の入力欄にはキーボードを出さないので、入力欄そのものは動かさず上のバーだけはずませる */
-.editor.open.from-fab .ed-bar { animation: barpop .42s cubic-bezier(.3, 1.5, .5, 1); }
-@keyframes barpop { from { transform: translateY(-8px) scale(.96); } to { transform: none; } }
 .ed-bar {
   display: flex; align-items: center; gap: 8px;
   padding-block: calc(10px + env(safe-area-inset-top, 0px)) 8px;
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
+/* 書いている間（本文にカーソルがある間）は上のバーを出さない。キーボードを閉じると出る。
+   iPhoneはキーボードが出るとページを押し上げるので、バーが半分隠れたり、スクロールで出せなくなったりするため */
+.editor:has(#text:focus) .ed-bar { display: none; }
 .back {
   display: inline-flex; align-items: center; gap: 2px;
   border: 0; border-radius: 999px; padding: 8px 16px 8px 10px; cursor: pointer;
