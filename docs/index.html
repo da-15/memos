@@ -930,9 +930,26 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       // （iPhoneは画面をずらしてカーソルを見せようとするので、位置を測る方法だとずれた分だけ狂う）
       editor.style.top = vv.offsetTop + 'px';
       editor.style.paddingBottom = Math.max(0, editor.offsetHeight - vv.height) + 'px';
-      // 書く範囲が縮んだら、カーソルが見えるところまで本文をスクロールする
-      if (document.activeElement === text) text.setSelectionRange(text.selectionStart, text.selectionEnd);
+      // 書く範囲が縮んでも、iPhoneはカーソルの行まで本文をスクロールしてくれないので、自分でスクロールする
+      if (document.activeElement === text) scrollToCaret();
     };
+    // カーソルの行の下はしを、本文と同じ書式の見えない箱に書き写して測り、その行（＋1行のゆとり）が見えるようにする
+    // （1行ゆとりをとるのは、キーボードの上に浮かぶバーが見えている範囲に少しかかるため）
+    function scrollToCaret() {
+      const cs = getComputedStyle(text);
+      const m = document.createElement('div');
+      m.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box';
+      for (const k of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingLeft', 'paddingRight', 'paddingTop']) m.style[k] = cs[k];
+      m.style.width = text.clientWidth + 'px';
+      m.textContent = text.value.slice(0, text.selectionEnd);
+      const mark = m.appendChild(document.createElement('span'));
+      mark.textContent = '\u200b';
+      document.body.appendChild(m);
+      const lineBottom = mark.offsetTop + parseFloat(cs.lineHeight);
+      m.remove();
+      const want = lineBottom + parseFloat(cs.lineHeight) - text.clientHeight;
+      if (want > text.scrollTop) text.scrollTop = want;
+    }
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
 
