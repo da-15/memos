@@ -312,10 +312,10 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
 #text {
   --lh: 32px;
   flex: 1; width: 100%; border: 0; outline: none; resize: none;
-  padding-block: 6px 40px;
+  padding-top: 6px;
   padding-left: max(22px, env(safe-area-inset-left, 0px));
   padding-right: max(22px, env(safe-area-inset-right, 0px));
-  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 70vh; /* 最後の行も画面の上から1/3まで上げられるように */
   font-family: var(--font); font-size: 17px; font-weight: 500; line-height: var(--lh); color: var(--ink);
   background-color: transparent;
   background-image: linear-gradient(transparent calc(var(--lh) - 1.5px), var(--line) calc(var(--lh) - 1.5px));
@@ -921,45 +921,29 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
   editor.addEventListener('touchend', egEnd);
   editor.addEventListener('touchcancel', egEnd);
 
-  // キーボードが出たとき入力画面を見える範囲に合わせる
-  if (window.visualViewport) {
-    const vv = window.visualViewport;
-    const fit = () => {
-      // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
-      // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）。
-      // 入力画面の上はしは見えている範囲の上はしに合わせてあるので、
-      // 「入力画面の高さ − 見えている高さ」がキーボードに隠れる分になる。
-      // （iPhoneは画面をずらしてカーソルを見せようとするので、位置を測る方法だとずれた分だけ狂う）
-      editor.style.top = vv.offsetTop + 'px';
-      // キーボードが出ているかもしれないのは本文にカーソルがあるときだけ。それ以外は0（iPhoneは起動のたびに画面の高さの扱いが変わることがあり、
-      // キーボードがなくても差が出て、下に空白の帯ができてしまうため）
-      const typing = document.activeElement === text;
-      editor.style.paddingBottom = typing ? Math.max(0, editor.offsetHeight - vv.height) + 'px' : '0px';
-      // 書く範囲が縮んでも、iPhoneはカーソルの行まで本文をスクロールしてくれないので、自分でスクロールする
-      if (typing) scrollToCaret();
-    };
-    // カーソルの行の下はしを、本文と同じ書式の見えない箱に書き写して測り、その行（＋1行のゆとり）が見えるようにする
-    // （1行ゆとりをとるのは、キーボードの上に浮かぶバーが見えている範囲に少しかかるため）
-    function scrollToCaret() {
-      const cs = getComputedStyle(text);
-      const m = document.createElement('div');
-      m.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box';
-      for (const k of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingLeft', 'paddingRight', 'paddingTop']) m.style[k] = cs[k];
-      m.style.width = text.clientWidth + 'px';
-      m.textContent = text.value.slice(0, text.selectionEnd);
-      const mark = m.appendChild(document.createElement('span'));
-      mark.textContent = '\u200b';
-      document.body.appendChild(m);
-      const lineBottom = mark.offsetTop + parseFloat(cs.lineHeight);
-      m.remove();
-      const want = lineBottom + parseFloat(cs.lineHeight) - text.clientHeight;
-      if (want > text.scrollTop) text.scrollTop = want;
-    }
-    vv.addEventListener('resize', fit);
-    vv.addEventListener('scroll', fit);
-    text.addEventListener('blur', fit); // カーソルが本文から外れたら、下のすき間をなくす
+  // カーソルの行を、いつも画面の上から1/3の高さに置く（タイプライターのように）。
+  // キーボードは画面の下半分より下にしか出ないので、ここなら隠れない。iPhoneも「もう見えている」と判断して
+  // 画面全体をずらさないので、キーボードの高さを測ったり、画面のずれに合わせたりする処理がいらない。
+  // カーソルより前の文字を、本文と同じ書式の見えない箱に書き写して、カーソルの行の位置を測る
+  function caretToThird() {
+    const cs = getComputedStyle(text);
+    const m = document.createElement('div');
+    m.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box';
+    for (const k of ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'paddingLeft', 'paddingRight', 'paddingTop']) m.style[k] = cs[k];
+    m.style.width = text.clientWidth + 'px';
+    m.textContent = text.value.slice(0, text.selectionEnd);
+    const mark = m.appendChild(document.createElement('span'));
+    mark.textContent = '\u200b';
+    document.body.appendChild(m);
+    const lineTop = mark.offsetTop;
+    m.remove();
+    const third = document.documentElement.clientHeight / 3 - text.getBoundingClientRect().top;
+    text.scrollTop = Math.max(0, lineTop - third);
   }
-
+  // タップでカーソルを置いたとき・書いて改行したとき（範囲を選んでいる最中は動かさない）
+  document.addEventListener('selectionchange', () => {
+    if (document.activeElement === text && text.selectionStart === text.selectionEnd) caretToThird();
+  });
 
   /* ---------- バックアップ（ファイルに書き出す・読み込む） ---------- */
   const LAST_KEY = 'mochimemo.lastBackup';
