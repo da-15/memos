@@ -45,19 +45,31 @@ self.addEventListener('fetch', (e) => {
 
   if (url.origin !== location.origin) return;
 
-  // ページ本体: ネット優先（更新をすぐ反映）、オフライン時はキャッシュ。
-  // GitHub Pagesは「10分間は使い回してよい」と返すので、cache: 'no-cache' で毎回GitHubに確認する
-  // （変わっていなければ中身は送られてこないので、通信はほとんど増えない）
+  // ページ本体: キャッシュ優先（起動速度を優先）。
+  // 起動時はキャッシュしたHTMLをすぐに返し、裏側でGitHubから最新版を取得する。
+  // 取得した最新版はキャッシュに保存し、次回起動時から使用する。
+  // オフライン時はキャッシュしたHTMLをそのまま使用する。
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
-        .then((res) => {
-          // ちゃんと取れたときだけオフライン用に保存する。GitHub がエラーを返したときは、保存してあるページを出す
-          if (!res.ok) return caches.match('./index.html').then((hit) => hit || res);
-          const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy));
+      caches.match('./index.html').then(async (hit) => {
+        const update = fetch(req.url, {
+          cache: 'no-cache',
+          credentials: 'same-origin'
+        }).then(async (res) => {
+          if (res.ok) {
+            const c = await caches.open(CACHE);
+            await c.put('./index.html', res.clone());
+          }
           return res;
-        })
-        .catch(() => caches.match('./index.html'))
+        });
+  
+        if (hit) {
+          e.waitUntil(update.catch(() => {}));
+          return hit;
+        }
+  
+        return update;
+      })
     );
     return;
   }
