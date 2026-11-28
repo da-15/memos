@@ -924,9 +924,15 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const vv = window.visualViewport;
     const fit = () => {
       // 入力画面の背景はキーボードの裏まで伸ばしたまま、文字を書く範囲だけキーボードの上までにする
-      // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）
+      // （iOSのキーボード上のバーは透けるので、高さを縮めると裏の一覧が見えてしまう）。
+      // window.innerHeight はiPhoneのアプリではキーボードと一緒に縮むことがあるので使わず、
+      // 入力画面の下はしと、見えている範囲の下はしを実際に測って、その差だけあける
       editor.style.top = vv.offsetTop + 'px';
-      editor.style.paddingBottom = Math.max(0, window.innerHeight - vv.height) + 'px';
+      editor.style.paddingBottom = '0px';
+      const hidden = editor.getBoundingClientRect().bottom - (vv.offsetTop + vv.height);
+      editor.style.paddingBottom = Math.max(0, hidden) + 'px';
+      // 書く範囲が縮んだら、カーソルが見えるところまで本文をスクロールする
+      if (document.activeElement === text) text.setSelectionRange(text.selectionStart, text.selectionEnd);
     };
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
