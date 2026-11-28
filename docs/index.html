@@ -921,11 +921,13 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
   editor.addEventListener('touchend', egEnd);
   editor.addEventListener('touchcancel', egEnd);
 
-  // カーソルの行を、いつも画面の上から1/3の高さに置く（タイプライターのように）。
-  // キーボードは画面の下半分より下にしか出ないので、ここなら隠れない。iPhoneも「もう見えている」と判断して
-  // 画面全体をずらさないので、キーボードの高さを測ったり、画面のずれに合わせたりする処理がいらない。
-  // カーソルより前の文字を、本文と同じ書式の見えない箱に書き写して、カーソルの行の位置を測る
+  // 読むだけの状態から本文を初めてタップしたときだけ、キーボードが出そろうのを少し待ってから、
+  // カーソルの行が画面の上から1/3の高さに来るように、ゆっくりスクロールする（動いたことが分かるように）。
+  // 1/3ならキーボードより上なので隠れない。そのあと書いている間のスクロールはiPhoneにまかせる。
+  // 下のほうの行をタップすると、iPhoneが先に画面全体をずらすので、それも一緒にゆっくり元に戻す
   function caretToThird() {
+    if (document.activeElement !== text) return;
+    // カーソルより前の文字を、本文と同じ書式の見えない箱に書き写して、カーソルの行の位置を測る
     const cs = getComputedStyle(text);
     const m = document.createElement('div');
     m.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre-wrap;overflow-wrap:break-word;box-sizing:border-box';
@@ -937,13 +939,11 @@ html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
     document.body.appendChild(m);
     const lineTop = mark.offsetTop;
     m.remove();
-    const third = document.documentElement.clientHeight / 3 - text.getBoundingClientRect().top;
-    text.scrollTop = Math.max(0, lineTop - third);
+    const third = document.documentElement.clientHeight / 3 - text.offsetTop; // 画面がずれていないときの位置で計算する
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    text.scrollTo({ top: Math.max(0, lineTop - third), behavior: 'smooth' });
   }
-  // タップでカーソルを置いたとき・書いて改行したとき（範囲を選んでいる最中は動かさない）
-  document.addEventListener('selectionchange', () => {
-    if (document.activeElement === text && text.selectionStart === text.selectionEnd) caretToThird();
-  });
+  text.addEventListener('focus', () => setTimeout(caretToThird, 400));
 
   /* ---------- バックアップ（ファイルに書き出す・読み込む） ---------- */
   const LAST_KEY = 'mochimemo.lastBackup';
