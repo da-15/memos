@@ -203,10 +203,6 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   box-shadow: -10px 0 30px -12px var(--shadow);
 }
 .editor.open { transform: none; }
-/* 書いている間は、ページのいちばん外側（html）の背景を紙の色にする。画面の下のほうの行をタップすると iPhone がページを押し上げ、
-   キーボードの上あたりに「ページの外」が見える。その色はページのいちばん外側の背景色から決まるため。
-   （一覧は body の背景を使うので、body は変えない。変えると、閉じるときに一覧が一瞬紙の色になる） */
-html.editing { background-color: var(--paper, var(--c0)); }
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
@@ -823,7 +819,6 @@ html.editing { background-color: var(--paper, var(--c0)); }
     editor.setAttribute('aria-hidden', 'false');
     editor.inert = false;
     document.body.classList.add('editing');
-    document.documentElement.classList.add('editing');
     history.pushState({ editor: true }, ''); // 「1ページ進んだ」ことにする（戻る操作で一覧に戻れるように）
     if (isNew && focusNow) {
       void editor.offsetHeight;
@@ -845,7 +840,6 @@ html.editing { background-color: var(--paper, var(--c0)); }
     editor.setAttribute('aria-hidden', 'true');
     editor.inert = true;
     document.body.classList.remove('editing');
-    document.documentElement.classList.remove('editing');
     render();
   }
   text.addEventListener('input', () => {
