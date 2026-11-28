@@ -942,6 +942,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     let dbgBox = null, dbgTaps = [], fits = 0;
     const show = () => {
       if (!dbgBox) return;
+      dbgBox.style.top = (vv.offsetTop + 56) + 'px'; // 画面がずれても見えるところに出す
       const e = editor.getBoundingClientRect(), t = text.getBoundingClientRect();
       dbgBox.textContent = [
         'innerH ' + window.innerHeight + ' / clientH ' + document.documentElement.clientHeight,
@@ -962,7 +963,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       dbgTaps = [];
       if (dbgBox) { dbgBox.remove(); dbgBox = null; return; }
       dbgBox = document.createElement('pre');
-      dbgBox.style.cssText = 'position:fixed;z-index:99;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 56px);margin:0;padding:8px 10px;border-radius:12px;background:rgba(40,25,35,.85);color:#fff;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap;pointer-events:none';
+      dbgBox.style.cssText = 'position:fixed;z-index:99;left:8px;right:8px;margin:0;padding:8px 10px;border-radius:12px;background:rgba(40,25,35,.85);color:#fff;font:11px/1.5 ui-monospace,monospace;white-space:pre-wrap;pointer-events:none';
       document.body.appendChild(dbgBox);
       show();
     });
