@@ -203,8 +203,12 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   box-shadow: -10px 0 30px -12px var(--shadow);
 }
 .editor.open { transform: none; }
-/* 書いている間は、ページの外側（iPhoneが画面を大きくずらしたときにキーボードの上に見える部分）も紙の色にする */
-html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
+/* 紙の色を入力画面の下にもう1画面分のばしておく（見た目だけ）。画面の下のほうの行をタップすると、iPhoneがページを押し上げて、
+   入力画面の下（キーボードの上あたり）にページの外が見えてしまうため。ページの外の色はiPhoneが起動時にしか決めないので、そちらは変えられない */
+.editor::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 100vh;
+  background: inherit; pointer-events: none;
+}
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
