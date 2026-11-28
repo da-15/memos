@@ -203,12 +203,8 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   box-shadow: -10px 0 30px -12px var(--shadow);
 }
 .editor.open { transform: none; }
-/* 紙の色を入力画面の下にもしばらく伸ばしておく（見た目だけ）。カーソルが下のほうにあると iPhone が画面を大きくずらし、
-   キーボードの上のバーのあたりで入力画面が切れて、後ろの白っぽい背景が見えてしまうため */
-.editor::after {
-  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 100vh;
-  background: var(--paper, var(--c0)); pointer-events: none;
-}
+/* 書いている間は、ページの外側（iPhoneが画面を大きくずらしたときにキーボードの上に見える部分）も紙の色にする */
+html:has(> body.editing) { background-color: var(--paper, var(--c0)); }
 .editor.dragging { transition: none; }
 /* 新しいメモはその場でぱっと開く。最初から定位置・不透明なので、すぐキーボードを出せる */
 .editor.open.from-fab { transition: none; }
@@ -759,7 +755,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
   function setColor(i) {
     if (!cur) return;
     cur.color = i;
-    editor.style.setProperty('--paper', 'var(--c' + i + ')');
+    document.documentElement.style.setProperty('--paper', 'var(--c' + i + ')');
     markColor(i);
     saveNow();
     setTimeout(() => togglePalette(false), 220);
@@ -813,7 +809,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     if (!cur) return;
     if (!saveFailed) hideToast();
     text.value = cur.text;
-    editor.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
+    document.documentElement.style.setProperty('--paper', 'var(--c' + (cur.color % COLORS) + ')');
     markColor(cur.color % COLORS);
     togglePalette(false);
     toggleSize(false);
@@ -935,9 +931,12 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
       // 「入力画面の高さ − 見えている高さ」がキーボードに隠れる分になる。
       // （iPhoneは画面をずらしてカーソルを見せようとするので、位置を測る方法だとずれた分だけ狂う）
       editor.style.top = vv.offsetTop + 'px';
-      editor.style.paddingBottom = Math.max(0, editor.offsetHeight - vv.height) + 'px';
+      // キーボードが出ているかもしれないのは本文にカーソルがあるときだけ。それ以外は0（iPhoneは起動のたびに画面の高さの扱いが変わることがあり、
+      // キーボードがなくても差が出て、下に空白の帯ができてしまうため）
+      const typing = document.activeElement === text;
+      editor.style.paddingBottom = typing ? Math.max(0, editor.offsetHeight - vv.height) + 'px' : '0px';
       // 書く範囲が縮んでも、iPhoneはカーソルの行まで本文をスクロールしてくれないので、自分でスクロールする
-      if (document.activeElement === text) scrollToCaret();
+      if (typing) scrollToCaret();
     };
     // カーソルの行の下はしを、本文と同じ書式の見えない箱に書き写して測り、その行（＋1行のゆとり）が見えるようにする
     // （1行ゆとりをとるのは、キーボードの上に浮かぶバーが見えている範囲に少しかかるため）
@@ -958,6 +957,7 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     }
     vv.addEventListener('resize', fit);
     vv.addEventListener('scroll', fit);
+    text.addEventListener('blur', fit); // カーソルが本文から外れたら、下のすき間をなくす
   }
 
 
