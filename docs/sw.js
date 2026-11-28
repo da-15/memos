@@ -1,5 +1,5 @@
 // もちメモ service worker: オフラインでも開けるようにアプリ本体をキャッシュする
-const CACHE = 'mochimemo-v48';
+const CACHE = 'mochimemo-v50';
 const SHELL = [
   './',
   './index.html',
@@ -36,8 +36,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       caches.open(CACHE).then(async (c) => {
         const hit = await c.match(req);
-        const net = fetch(req).then((res) => { c.put(req, res.clone()); return res; }).catch(() => hit);
-        return hit || net;
+        const net = fetch(req).then((res) => {
+          if (res.ok || res.type === 'opaque') c.put(req, res.clone());
+          return res;
+        });
+        return hit || net.catch(() => Response.error());
       })
     );
     return;
@@ -50,27 +53,31 @@ self.addEventListener('fetch', (e) => {
   // 取得した最新版はキャッシュに保存し、次回起動時から使用する。
   // オフライン時はキャッシュしたHTMLをそのまま使用する。
   if (req.mode === 'navigate') {
-    e.respondWith(
-      caches.match('./index.html').then(async (hit) => {
-        const update = fetch(req.url, {
-          cache: 'no-cache',
-          credentials: 'same-origin'
-        }).then(async (res) => {
-          if (res.ok) {
-            const c = await caches.open(CACHE);
-            await c.put('./index.html', res.clone());
-          }
-          return res;
-        });
-  
-        if (hit) {
-          e.waitUntil(update.catch(() => {}));
-          return hit;
+    const cachePromise = caches.open(CACHE);
+
+    // 更新処理は同期的に開始し、すぐ waitUntil に登録する
+    const update = fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' })
+      .then(async (res) => {
+        // リダイレクト応答や失敗応答はキャッシュしない
+        if (res.ok && !res.redirected) {
+          const cache = await cachePromise;
+          await cache.put('./index.html', res.clone());
         }
-  
-        return update;
-      })
-    );
+        return res;
+      });
+    e.waitUntil(update.catch(() => {}));
+
+    e.respondWith((async () => {
+      const cache = await cachePromise;
+      const hit = await cache.match('./index.html');
+      if (hit) return hit;
+
+      // キャッシュがなく、通信にも失敗した場合のフォールバック
+      return update.catch(() => new Response('オフラインです', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      }));
+    })());
     return;
   }
 
