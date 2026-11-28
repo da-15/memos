@@ -903,35 +903,41 @@ body.editing .toast { right: calc(16px + env(safe-area-inset-right, 0px)); }
     const d = new Date(), z = (n) => String(n).padStart(2, '0');
     return 'mochimemo-' + d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()) + '.json';
   }
-  $('bk-save').addEventListener('click', async () => {
-    const kept = memos.filter((m) => m.text.trim() !== '');
-    const data = { app: 'mochimemo', version: 1, exportedAt: new Date().toISOString(), memos: kept };
-    const name = backupName();
-    const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' });
-    const done = () => {
-      try { localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), count: kept.length })); } catch (e) {}
-      closeSheets();
-      showToast('バックアップしました（メモ ' + kept.length + 'こ）', null);
-    };
-    try {
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        // iPhone：共有メニューが出るので「"ファイル"に保存」を選ぶ
+$('bk-save').addEventListener('click', async () => {
+  const kept = memos.filter((m) => m.text.trim() !== '');
+  const data = { app: 'mochimemo', version: 1, exportedAt: new Date().toISOString(), memos: kept };
+  const name = backupName();
+  const file = new File([JSON.stringify(data, null, 2)], name, { type: 'application/json' });
+  const done = () => {
+    try { localStorage.setItem(LAST_KEY, JSON.stringify({ at: Date.now(), count: kept.length })); } catch (e) {}
+    closeSheets();
+    showToast('バックアップしました（メモ ' + kept.length + 'こ）', null);
+  };
+  const download = () => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
+  // 指で操作する端末（iPhoneなど）だけ共有メニューを使う
+  const touchDevice = navigator.maxTouchPoints > 0 && matchMedia('(pointer: coarse)').matches;
+  try {
+    if (touchDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
         await navigator.share({ files: [file], title: name });
-        done();
-      } else {
-        // 共有メニューがない環境（パソコンなど）：ファイルとしてダウンロード
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a'); a.href = url; a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        done();
+      } catch (e) {
+        if (e && e.name === 'AbortError') return; // 共有メニューを閉じただけ
+        download(); // 共有に失敗したらダウンロードで代わりにする
       }
-    } catch (e) {
-      if (e && e.name === 'AbortError') return; // 共有メニューを閉じただけ
-      closeSheets(); // メニューの裏にお知らせが隠れないように
-      showToast('バックアップできませんでした。もう一度ためしてね', null, 6000, true);
+    } else {
+      download();
     }
-  });
+    done();
+  } catch (e) {
+    closeSheets();
+    showToast('バックアップできませんでした。もう一度ためしてね', null, 6000, true);
+  }
+});
 
   $('bk-open').addEventListener('click', () => { bkFile.value = ''; bkFile.click(); });
   function cleanMemo(m) {
